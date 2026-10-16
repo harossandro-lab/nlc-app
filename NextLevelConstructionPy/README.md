@@ -7,7 +7,9 @@ O Java continua funcionando até o Python ter as mesmas telas.
 
 - **Pronto (núcleo, sem telas):** cálculo de QTY, ItemKey, preços, Ordered (soma por GROUP), Received (entregue x pedido),
   Audit Log (ADDED/CHANGED/REMOVED), formatação igual à do web, banco SQLite e acesso aos dados.
-- **Falta:** todas as telas (decidir a biblioteca: PySide6 ou Tkinter) e a tela Config.
+- **Telas (PySide6):** janela principal com barra de cima/baixo, Home com os círculos dos jobs e "+ New Job", menu do job com os
+  19 círculos e a navegação de volta. As demais telas mostram um aviso "ainda não foi portada".
+- **Falta:** Lista, Dashboard, seções de takeoff, Ordered, Received, Audit Log, Materials DB, Suppliers & Tax e Config.
 
 ## Estrutura
 
@@ -18,14 +20,27 @@ O Java continua funcionando até o Python ter as mesmas telas.
 | `nlc/db.py`, `nlc/schema.sql` | Banco SQLite. Por padrão o mesmo arquivo do Java: `~/NextLevelConstruction/material_list.db` (ou a variável `NLC_DB`) |
 | `nlc/dao.py` | Leitura e gravação de cada tabela |
 | `nlc/audit.py` | Linha de base e comparação do Audit Log |
+| `nlc/tiles.py` | Os 19 círculos do menu do job e as abreviações |
+| `nlc/ui/` | Telas em PySide6 (tema, círculos, Home, menu do job, janela principal) |
 | `tests/` | Testes (`unittest`, sem instalar nada) |
+
+## Como rodar
+
+```powershell
+cd NextLevelConstructionPy
+python -m venv .venv                      # só na primeira vez
+.\.venv\Scripts\python -m pip install PySide6   # só na primeira vez
+.\.venv\Scripts\python -m nlc                   # abre o app
+```
 
 ## Testes
 
 ```powershell
-cd NextLevelConstructionPy
-python -I -m unittest discover -s tests -t . -v
+$env:QT_QPA_PLATFORM = "offscreen"        # testa as telas sem abrir janela
+.\.venv\Scripts\python -I -m unittest discover -s tests -t . -v
 ```
+
+Sem o PySide6 (usando o `python` do sistema) os testes de tela são pulados e o resto roda.
 
 `tests/test_parity_java.py` roda o `CalcEngine` do Java e o `calc.py` nas mesmas ~45 mil entradas e compara QTY, comprimento
 e ItemKey. Precisa do Java compilado em `../NextLevelConstruction/bin` (senão é pulado).

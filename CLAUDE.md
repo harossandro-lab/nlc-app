@@ -144,8 +144,9 @@ java "-Duser.home=$env:TEMP\nlc-home" -cp "$env:TEMP\nlc-smoke;bin;resources;lib
    `MaterialCellEditor`; `MainFrame` re-adds panels under the same CardLayout name without removing the old ones.
 7. Tests: grow `test/SmokeCheck.java` into one case per QTY rule, using values computed by the workbook itself.
 8. **Python migration** (`NextLevelConstructionPy/`): core DONE (calc, seed, db, DAOs, audit; 22 `unittest` tests incl. a Java-vs-Python parity run over
-   ~45k inputs: `python -I -m unittest discover -s tests -t .`). Next: choose the UI library (PySide6 needs `pip install`, Tkinter ships with Python),
-   then port the screens in the Java order (Home, project menu, sections, Ordered, Received, Audit, Lista, Config). The Config screen is still undone in
+   ~45k inputs: `python -I -m unittest discover -s tests -t .`). UI library chosen: PySide6 (venv in `NextLevelConstructionPy/.venv`, `python -m nlc` runs it; UI tests need
+   `QT_QPA_PLATFORM=offscreen`, 32 tests). DONE: main window, Home, project menu (19 circles), navigation. Next: port the remaining screens in the
+   Java order (Lista, Dashboard, sections, Ordered, Received, Audit, Materials DB, Suppliers, Config). Screenshots are NOT wanted by the user. The Config screen is still undone in
    Java too: rename abbr/name, remove job = hard delete after typing the abbr, no "Export all jobs".
 9. **Invalid LENGTH text differs across the three implementations** (found by the parity test): Java `Double.parseDouble` accepts `12d`, `5f`, `NaN`,
    `Infinity`; web `parseFloat` reads a prefix (`5f`→5, `Infinity`→Infinity, `1_0`→1); Excel `VALUE()` and the Python port reject them. Needs a decision
