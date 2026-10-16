@@ -90,6 +90,24 @@ class MainWindowTests(unittest.TestCase):
         self.assertEqual(AuditDao(self.conn).get_snapshot(self.avn.id), {"2x4|12'|df.no2": 2})
         self.assertEqual(AuditDao(self.conn).count_log(self.avn.id), 0)
 
+    def test_lista_has_one_row_per_job_and_opens_the_job(self):
+        self.dao.create("NYD", "New York Developers")
+        self.win.show_list()
+        panel = self.win.stack.currentWidget()
+        self.assertEqual([r.name.text() for r in panel.rows], ["AVENEL", "New York Developers"])
+        self.assertEqual([r.badge.text() for r in panel.rows], ["AVN", "NYD"])
+        self.assertTrue(panel.rows[0].meta.text().startswith("Criado em "))
+        self.assertEqual((self.win.current_level, self.win.back_link.text()), ("home", ""))
+        panel.rows[1].clicked.emit()
+        self.assertEqual((self.win.current_level, self.win.current_project.abbr), ("project-menu", "NYD"))
+        self.assertEqual(self.win.stack.count(), 1)
+
+    def test_lista_without_jobs_shows_a_hint(self):
+        for p in self.dao.find_all():
+            self.dao.delete(p.id)
+        self.win.show_list()
+        self.assertEqual(self.win.stack.currentWidget().rows, [])
+
     def test_circle_click_emits(self):
         from PySide6.QtCore import QPoint, Qt
         from PySide6.QtTest import QTest

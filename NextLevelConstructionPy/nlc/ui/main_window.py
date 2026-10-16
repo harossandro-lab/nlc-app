@@ -11,6 +11,7 @@ from .. import audit, db
 from ..models import Project
 from ..tiles import TILES
 from .home import HomePanel
+from .project_list import ProjectListPanel
 from .project_menu import ProjectMenuPanel
 
 
@@ -114,11 +115,13 @@ class MainWindow(QMainWindow):
         self._show(panel)
 
     def show_list(self) -> None:
-        # Lista (All Jobs) is the next screen to port; until then it shows the placeholder.
+        """Lista (All Jobs): rebuilt each time so new and renamed jobs show up. Like Home, it has nothing above it."""
         self.current_level = "home"
         self.current_project = None
         self.back_link.setText("")
-        self._show(PlaceholderPanel("All Jobs"))
+        panel = ProjectListPanel(self.conn)
+        panel.open_project.connect(self.open_project)
+        self._show(panel)
 
     def open_project(self, project: Project) -> None:
         self.current_project = project

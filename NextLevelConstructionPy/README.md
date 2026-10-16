@@ -8,8 +8,8 @@ O Java continua funcionando até o Python ter as mesmas telas.
 - **Pronto (núcleo, sem telas):** cálculo de QTY, ItemKey, preços, Ordered (soma por GROUP), Received (entregue x pedido),
   Audit Log (ADDED/CHANGED/REMOVED), formatação igual à do web, banco SQLite e acesso aos dados.
 - **Telas (PySide6):** janela principal com barra de cima/baixo, Home com os círculos dos jobs e "+ New Job", menu do job com os
-  19 círculos e a navegação de volta. As demais telas mostram um aviso "ainda não foi portada".
-- **Falta:** Lista, Dashboard, seções de takeoff, Ordered, Received, Audit Log, Materials DB, Suppliers & Tax e Config.
+  19 círculos, a Lista (All Jobs) e a navegação de volta. As demais telas mostram um aviso "ainda não foi portada".
+- **Falta:** Dashboard, seções de takeoff, Ordered, Received, Audit Log, Materials DB, Suppliers & Tax e Config.
 
 ## Estrutura
 
@@ -20,8 +20,9 @@ O Java continua funcionando até o Python ter as mesmas telas.
 | `nlc/db.py`, `nlc/schema.sql` | Banco SQLite. Por padrão o mesmo arquivo do Java: `~/NextLevelConstruction/material_list.db` (ou a variável `NLC_DB`) |
 | `nlc/dao.py` | Leitura e gravação de cada tabela |
 | `nlc/audit.py` | Linha de base e comparação do Audit Log |
+| `nlc/formatting.py` | Formatação de datas igual à do web ("Oct 16, 2026") |
 | `nlc/tiles.py` | Os 19 círculos do menu do job e as abreviações |
-| `nlc/ui/` | Telas em PySide6 (tema, círculos, Home, menu do job, janela principal) |
+| `nlc/ui/` | Telas em PySide6 (tema, círculos, Home, Lista, menu do job, janela principal) |
 | `tests/` | Testes (`unittest`, sem instalar nada) |
 
 ## Como rodar
