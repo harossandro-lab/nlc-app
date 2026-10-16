@@ -2,7 +2,7 @@
 
 Replaces Next Level Construction's Excel/VBA material-takeoff workbooks with an app the whole team can use.
 The user (Sandro) is a construction professional and writes in Brazilian Portuguese.
-Last verified 2026-10-16: Java build + `test/SmokeCheck.java` (31/31) on JDK 21; web app exercised in headless Chromium.
+Last verified 2026-10-16: Java build + `test/SmokeCheck.java` (33/33) on JDK 21 (Linux) and JDK 25 (Windows 11, PowerShell block below); web app exercised in headless Chromium.
 
 ## Working agreements
 - Talk to the user in Brazilian Portuguese (pt-BR), in plain language. Code, identifiers, comments and commit messages stay in English.
@@ -67,7 +67,7 @@ QTY of a take-off line — first matching rule wins, then waste and rounding:
 - Default GROUP per section: sub-floor→`SUB-LOOR - WALL`; 1st…6th-walls→`1ST FLOOR - WALL`…`6TH FLOOR - WALL`; roof→`ROOF`;
   flush-beam→(none); shaft-wall→`SHAFT WALL - 1`; stair-tower→`STAIR TOWER - 1`; balcony→`BALCONY - FRONT  ELEVATION`; windows→`WINDOWS`.
 - LOCATION: FACTORY, FIELD (identical). LENGTH: the 22 workbook values plus `116 5/8"` (it comes from the ME Wood workbook, SETTINGS!F31).
-- **Known deviation:** the SPACING seed lacks `8'` — SETTINGS has both `8'` and `8"`. Fix it in both tracks.
+- SPACING: 9 values in the workbook's SETTINGS order (`10'`, `12"`, `16"`, `24"`, `32"`, `4'`, `6'`, `8'`, `8"`); fixed in both tracks and covered by SmokeCheck.
 - 13 sections (each with its real PURPOSE list): sub-floor, 1st…6th-walls, roof, flush-beam, shaft-wall, stair-tower, balcony, windows.
   25 species with about 500 species→material options.
 
@@ -98,11 +98,11 @@ QTY of a take-off line — first matching rule wins, then waste and rounding:
 mkdir -p bin
 javac --release 17 -encoding UTF-8 -cp lib/sqlite-jdbc-3.36.0.3.jar -d bin $(find src -name "*.java")
 java -cp "bin:resources:lib/sqlite-jdbc-3.36.0.3.jar" com.nlc.materiallist.Main     # GUI, needs a display
-# logic check without GUI; a throwaway user.home keeps the real database untouched. Expect: RESULT pass=31 fail=0
+# logic check without GUI; a throwaway user.home keeps the real database untouched. Expect: RESULT pass=33 fail=0
 javac --release 17 -cp "bin:lib/sqlite-jdbc-3.36.0.3.jar" -d /tmp/nlc-smoke test/SmokeCheck.java
 java -Duser.home=/tmp/nlc-home -cp "/tmp/nlc-smoke:bin:resources:lib/sqlite-jdbc-3.36.0.3.jar" SmokeCheck
 ```
-Windows PowerShell (NOT tested in the Linux sandbox where this file was written — run it once and fix this block if needed):
+Windows PowerShell (tested on Windows 11 with JDK 25, `--release 17`: compiles and SmokeCheck passes; the JDK 25 "restricted method" warning from sqlite-jdbc is harmless):
 ```powershell
 New-Item -ItemType Directory -Force bin | Out-Null
 $src = Get-ChildItem -Recurse src -Filter *.java | ForEach-Object FullName
@@ -128,7 +128,7 @@ java "-Duser.home=$env:TEMP\nlc-home" -cp "$env:TEMP\nlc-smoke;bin;resources;lib
    decision with the user (e.g. a hosted database such as Supabase/Firebase, or a small server). Then put the choice behind a
    `get(key)` / `set(key, value)` adapter that replaces `window.storage`, so the rest of the app stays unchanged.
 2. Make the web app usable outside Claude: the localStorage adapter (single user, offline) is the first step toward #1.
-3. Fix the SPACING seed (`8'` missing) in `web/index.html` (`SEED`) and in `SeedData.SPACINGS`.
+3. ~~Fix the SPACING seed (`8'` missing)~~ — DONE (web `SEED` and `SeedData.SPACINGS`, workbook order, SmokeCheck covers it).
 4. Java: add the 12 missing section tiles in `ProjectMenuPanel.TILES` (ids match `SeedData.SECTIONS`: `1st-walls`, `2nd-walls`, …); port
    Ordered (auto), Received and Audit Log from the web app; add a Config screen and a real "Lista" (the bottom nav reuses Home).
 5. Data: neither app has the real price list or suppliers yet (web seed: one example material `2X4|12'|DF.No2`, suppliers FACTORY/FIELD

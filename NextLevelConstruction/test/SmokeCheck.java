@@ -34,6 +34,8 @@ public class SmokeCheck {
         check("GROUPS keeps double space", SeedData.GROUPS.contains("BALCONY - FRONT  ELEVATION"), true);
         check("SECTIONS count", SeedData.SECTIONS.size(), 13);
         check("SPECIES count", SeedData.SPECIES.size(), 25);
+        check("SPACINGS has 8 feet (8')", SeedData.SPACINGS.contains("8'"), true);
+        check("SPACINGS has 8 inches (8\")", SeedData.SPACINGS.contains("8\""), true);
         check("DF.No2 materials", SeedData.materialsForSpecies("DF.No2").size(), 7);
         check("LVL materials", SeedData.materialsForSpecies("LVL").size(), 90);
         // QTY rules
