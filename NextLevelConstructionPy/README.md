@@ -9,7 +9,8 @@ O Java continua funcionando até o Python ter as mesmas telas.
   Audit Log (ADDED/CHANGED/REMOVED), formatação igual à do web, banco SQLite e acesso aos dados.
 - **Telas (PySide6):** janela principal com barra de cima/baixo, Home com os círculos dos jobs e "+ New Job", menu do job com os
   19 círculos, a Lista (All Jobs), **Ordered (auto)** e **Audit Log** (com Export CSV), **Dashboard** (totais, barras por seção, bloco de título e Export all), **Received** (entregas + barras entregue x pedido), **Suppliers & Tax** e **Materials DB** (tabelas editáveis, salvam na hora) e a navegação de volta. As demais telas mostram um aviso "ainda não foi portada".
-- **Falta:** as 13 seções de takeoff e Config.
+- **Config:** renomear sigla/nome (salva ao digitar), abrir o job e remover. Remover APAGA tudo do job (itens, preços, fornecedores, entregas, auditoria) e só libera depois de digitar a sigla.
+- **Falta:** as 13 seções de takeoff.
 
 ## Estrutura
 
@@ -24,7 +25,7 @@ O Java continua funcionando até o Python ter as mesmas telas.
 | `nlc/reports.py` | Linhas das tabelas, totais do Dashboard e texto dos CSV (iguais aos do web: linhas separadas por CRLF, arquivo salvo com BOM) |
 | `nlc/formatting.py` | Formatação de datas igual à do web ("Oct 16, 2026") |
 | `nlc/tiles.py` | Os 19 círculos do menu do job e as abreviações |
-| `nlc/ui/` | Telas em PySide6 (tema, círculos, Home, Lista, menu do job, Dashboard, Ordered, Audit Log, Received, Suppliers, Materials DB, janela principal) |
+| `nlc/ui/` | Telas em PySide6 (tema, círculos, Home, Lista, menu do job, Dashboard, Ordered, Audit Log, Received, Suppliers, Materials DB, Config, janela principal) |
 | `tests/` | Testes (`unittest`, sem instalar nada) |
 
 ## Como rodar

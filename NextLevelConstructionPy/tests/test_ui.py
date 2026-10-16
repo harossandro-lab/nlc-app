@@ -367,6 +367,61 @@ class MainWindowTests(unittest.TestCase):
         self.assertTrue(text.startswith("Section,Group,Purpose,"))
         self.assertIn("1st Floor Walls,1ST FLOOR - WALL,Stud,,2X4,12'", text)
 
+    # ---- Config ----
+    def test_config_lists_jobs_and_renames_as_you_type(self):
+        self.dao.create("NYD", "New York Developers")
+        self.win.show_config()
+        panel = self.win.stack.currentWidget()
+        self.assertEqual((self.win.current_level, self.win.back_link.text()), ("home", ""))
+        self.assertEqual([(r["abbr"].text(), r["name"].text()) for r in panel.rows],
+                         [("AVN", "AVENEL"), ("NYD", "New York Developers")])
+        panel.rows[0]["abbr"].textEdited.emit("av2")                    # typed in lower case: stored in upper case
+        panel.rows[0]["name"].textEdited.emit("Avenel Phase 2")
+        saved = {p.id: (p.abbr, p.name) for p in self.dao.find_all()}
+        self.assertEqual(saved[self.avn.id], ("AV2", "Avenel Phase 2"))
+        self.assertEqual(panel.rows[0]["abbr"].text(), "AV2")
+        self.assertEqual(panel.rows[0]["abbr"].maxLength(), 5)
+
+    def test_config_open_button_opens_the_job(self):
+        self.win.show_config()
+        self.win.stack.currentWidget().rows[0]["open"].click()
+        self.assertEqual((self.win.current_level, self.win.current_project.id), ("project-menu", self.avn.id))
+
+    def test_config_remove_needs_confirmation_and_erases_everything_of_the_job(self):
+        from nlc.dao import MaterialDbDao, ReceivedDao
+        from nlc.models import MaterialDbEntry, ReceivedEntry
+        self._add_stud(24.0)
+        MaterialDbDao(self.conn).insert(MaterialDbEntry(project_id=self.avn.id, material="2X4"))
+        ReceivedDao(self.conn).insert(ReceivedEntry(project_id=self.avn.id))
+        other = self.dao.create("NYD", "Keep me")
+        from nlc.ui.config import ConfigPanel
+        asked = []
+        answer = {"yes": False}
+        panel = ConfigPanel(self.conn, confirm_delete=lambda p, counts: (asked.append((p.abbr, counts)), answer["yes"])[1])
+        self.assertFalse(panel.remove(self.avn))                         # cancelled: nothing happens
+        self.assertEqual(len(self.dao.find_all()), 2)
+        answer["yes"] = True
+        self.assertTrue(panel.remove(self.avn))
+        self.assertEqual([p.id for p in self.dao.find_all()], [other.id])
+        self.assertEqual(self.dao.counts(self.avn.id), {"takeoff lines": 0, "materials": 0, "suppliers": 0,
+                                                        "deliveries": 0, "audit entries": 0})
+        self.assertEqual(asked[0][0], "AVN")
+        self.assertEqual(asked[0][1], {"takeoff lines": 1, "materials": 1, "suppliers": 2, "deliveries": 1, "audit entries": 0})
+        self.assertEqual(len(panel.rows), 1)                             # the list is rebuilt
+
+    def test_delete_dialog_unlocks_only_with_the_abbreviation(self):
+        from nlc.ui.config import DeleteJobDialog, delete_confirmed, describe_counts
+        dlg = DeleteJobDialog(self.avn, {"takeoff lines": 3, "materials": 0}, None)
+        self.assertFalse(dlg.delete_button.isEnabled())
+        dlg.typed.setText("AV")
+        self.assertFalse(dlg.delete_button.isEnabled())
+        dlg.typed.setText(" avn ")                                       # case and spaces around do not matter
+        self.assertTrue(dlg.delete_button.isEnabled())
+        self.assertTrue(delete_confirmed(self.avn, "AVN"))
+        self.assertFalse(delete_confirmed(self.avn, "AVENEL"))
+        self.assertEqual(describe_counts({"takeoff lines": 3, "materials": 0, "deliveries": 2}), "3 takeoff lines, 2 deliveries")
+        self.assertEqual(describe_counts({"materials": 0}), "no records besides the job itself")
+
     def test_circle_click_emits(self):
         from PySide6.QtCore import QPoint, Qt
         from PySide6.QtTest import QTest

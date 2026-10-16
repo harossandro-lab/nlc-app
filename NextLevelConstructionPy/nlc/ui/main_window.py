@@ -11,6 +11,7 @@ from .. import audit, db
 from ..models import Project
 from ..tiles import TILES
 from .audit_log import AuditPanel
+from .config import ConfigPanel
 from .dashboard import DashboardPanel
 from .home import HomePanel
 from .materials_db import MaterialsDbPanel
@@ -92,7 +93,8 @@ class MainWindow(QMainWindow):
         lay = QHBoxLayout(nav)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(0)
-        for label, action in (("Home", self.show_home), ("Lista", self.show_list), ("More", self.show_about)):
+        for label, action in (("Home", self.show_home), ("Lista", self.show_list), ("Config", self.show_config),
+                              ("More", self.show_about)):
             b = QPushButton(label)
             b.setObjectName("navbutton")
             b.setFlat(True)
@@ -126,6 +128,15 @@ class MainWindow(QMainWindow):
         self.current_project = None
         self.back_link.setText("")
         panel = ProjectListPanel(self.conn)
+        panel.open_project.connect(self.open_project)
+        self._show(panel)
+
+    def show_config(self) -> None:
+        """Config: rename or remove jobs. Like Home, it has nothing above it."""
+        self.current_level = "home"
+        self.current_project = None
+        self.back_link.setText("")
+        panel = ConfigPanel(self.conn)
         panel.open_project.connect(self.open_project)
         self._show(panel)
 

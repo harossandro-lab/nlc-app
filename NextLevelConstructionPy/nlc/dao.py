@@ -51,6 +51,14 @@ class ProjectDao:
         with self.conn:
             self.conn.execute("DELETE FROM projects WHERE id=?", (project_id,))
 
+    def counts(self, project_id: str) -> Dict[str, int]:
+        """How many records belong to a job (what a hard delete would erase), for the confirmation message."""
+        out = {}
+        for key, table in (("takeoff lines", "takeoff_items"), ("materials", "materials_db"), ("suppliers", "suppliers"),
+                           ("deliveries", "received_log"), ("audit entries", "audit_log")):
+            out[key] = self.conn.execute(f"SELECT COUNT(*) FROM {table} WHERE project_id=?", (project_id,)).fetchone()[0]
+        return out
+
     def get_info(self, project_id: str) -> ProjectInfo:
         r = self.conn.execute("SELECT name, jobsite, builder, created_by, arch_date, struct_date, total_sf "
                               "FROM project_info WHERE project_id=?", (project_id,)).fetchone()
