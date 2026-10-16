@@ -74,14 +74,16 @@ QTY of a take-off line — first matching rule wins, then waste and rounding:
 ## Web app (`web/index.html`)
 - Vanilla JS in one file; `SEED` (~line 205) holds the seed data. Navigation: `bottomView` (home|list|config|more),
   `homeLevel` (home|project-menu|shell), `backOneLevel()`. The 19 job circles are `TAB_CIRCLES`.
-- Persistence is `window.storage.get(key, true)` / `.set(key, value, true)` (shared mode) — **this API exists only inside Claude artifacts.**
+- Persistence goes through ONE adapter, `Store` (top of the script): `Store.get(key)` / `Store.set(key, value)`, both Promises, `get`
+  resolves `{value}` or `null`. Inside Claude artifacts it wraps `window.storage` (shared mode, `kind:'shared'`); anywhere else it uses
+  `localStorage` with prefix `nlc:` (`kind:'local'`, one user, this browser only; indicator says "saved on this device").
+  A cloud backend (Supabase, see backlog #1) replaces only this adapter.
   Keys: `projects-list`, and per job `proj:<id>:` + `project-info | database | suppliers | received-log | audit-log | audit-snapshot | items-all`
   (`items-all` holds all 13 sections in ONE key).
 - Sync layer: `markDirty` → `flushDirty` (500 ms debounce, 8 s background retry, flush on `visibilitychange`); indicator
   synced / syncing… / "not synced yet — retry". No `console.error/warn` by design.
-- Outside Claude (verified in headless Chromium): without `window.storage` the page stays on "Loading…" (the indicator still says
-  "synced") and nothing is saved. With a ~8-line localStorage shim that implements only `get` and `set` (both return Promises; `get`
-  resolves `{value}` or `null`) the whole app works: Home → AVN → 19 circles, and data survives a reload.
+- Outside Claude (verified in headless Chrome on Windows through a same-origin iframe harness): Home → AVN → 19 circles works and data
+  survives a reload (a job added directly in storage appears after reload). Before the adapter, the page stayed on "Loading…".
 
 ## Java app (`NextLevelConstruction/`)
 - Package `com.nlc.materiallist`: `calc/CalcEngine` (ALL business logic), `data/SeedData` (generated from the web seed), `db/Database`,
@@ -127,7 +129,10 @@ java "-Duser.home=$env:TEMP\nlc-home" -cp "$env:TEMP\nlc-smoke;bin;resources;lib
 1. **Team sync** is the main unmet requirement: the web app only syncs inside Claude artifacts; the Java app is local SQLite only. Needs a
    decision with the user (e.g. a hosted database such as Supabase/Firebase, or a small server). Then put the choice behind a
    `get(key)` / `set(key, value)` adapter that replaces `window.storage`, so the rest of the app stays unchanged.
-2. Make the web app usable outside Claude: the localStorage adapter (single user, offline) is the first step toward #1.
+2. ~~Make the web app usable outside Claude~~ — DONE (`Store` adapter, localStorage fallback). Open `web/index.html` from a local web server.
+   Decision (2026-10-16): the team is 30+ people (office, factory, field; internet sometimes drops) with per-person access levels, but
+   the user wants no online sync during the test/development phase. Recommended later backend: Supabase (login + roles, Java can use
+   it too), with an offline queue built by us; keep data per row/section instead of the single `items-all` key to avoid edit conflicts.
 3. ~~Fix the SPACING seed (`8'` missing)~~ — DONE (web `SEED` and `SeedData.SPACINGS`, workbook order, SmokeCheck covers it).
 4. Java: add the 12 missing section tiles in `ProjectMenuPanel.TILES` (ids match `SeedData.SECTIONS`: `1st-walls`, `2nd-walls`, …); port
    Ordered (auto), Received and Audit Log from the web app; add a Config screen and a real "Lista" (the bottom nav reuses Home).
