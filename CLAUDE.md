@@ -19,6 +19,8 @@ Last verified 2026-10-16: Java build + `test/SmokeCheck.java` (89/89) on JDK 21 
 - `web/index.html` — single-file HTML/JS app, build "app8" (vanilla JS, no build step; Google Fonts Oswald/Inter/IBM Plex Mono).
 - `NextLevelConstruction/` — Java 17+ / Swing / SQLite desktop base, an Eclipse project (`.project`, `.classpath`; its README.md is in pt-BR).
   The user edits/runs it in Eclipse: after you change files, tell them to press F5 on the project in Eclipse.
+- `NextLevelConstructionPy/` — Python 3.12 port of the desktop app (stdlib only so far: `sqlite3`, `unittest`), being built step by step; the user
+  decided on 2026-10-16 to convert everything to Python. The Java app stays working until Python reaches the same screens. See its README.md (pt-BR).
 
 ## What the user asked for
 - One app that replaces the whole spreadsheet, usable on Windows, macOS, iPhone and iPad; the team uses it at the same time (sync between people/devices).
@@ -141,3 +143,10 @@ java "-Duser.home=$env:TEMP\nlc-home" -cp "$env:TEMP\nlc-smoke;bin;resources;lib
 6. Cleanup: dead `SectionPanel.refresh()`; duplicated FEET matcher lines in `CalcEngine.parseSpacingAndPly`; unchecked warning in
    `MaterialCellEditor`; `MainFrame` re-adds panels under the same CardLayout name without removing the old ones.
 7. Tests: grow `test/SmokeCheck.java` into one case per QTY rule, using values computed by the workbook itself.
+8. **Python migration** (`NextLevelConstructionPy/`): core DONE (calc, seed, db, DAOs, audit; 22 `unittest` tests incl. a Java-vs-Python parity run over
+   ~45k inputs: `python -I -m unittest discover -s tests -t .`). Next: choose the UI library (PySide6 needs `pip install`, Tkinter ships with Python),
+   then port the screens in the Java order (Home, project menu, sections, Ordered, Received, Audit, Lista, Config). The Config screen is still undone in
+   Java too: rename abbr/name, remove job = hard delete after typing the abbr, no "Export all jobs".
+9. **Invalid LENGTH text differs across the three implementations** (found by the parity test): Java `Double.parseDouble` accepts `12d`, `5f`, `NaN`,
+   `Infinity`; web `parseFloat` reads a prefix (`5f`→5, `Infinity`→Infinity, `1_0`→1); Excel `VALUE()` and the Python port reject them. Needs a decision
+   (suggested: make Java and web strict like Python). Nothing changed yet.
