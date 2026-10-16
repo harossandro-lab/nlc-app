@@ -77,9 +77,9 @@ public class SmokeCheck {
         List<String> wantTiles = new ArrayList<>();
         wantTiles.add("dashboard");
         for (SeedData.Section sec : SeedData.SECTIONS) wantTiles.add(sec.id);
-        wantTiles.add("database"); wantTiles.add("suppliers");
-        check("menu tiles = dashboard + 13 sections + db + suppliers", tileIds, wantTiles);
-        check("menu tile count", tileIds.size(), 16);
+        wantTiles.add("ordered"); wantTiles.add("database"); wantTiles.add("suppliers");
+        check("menu tiles = dashboard + 13 sections + ordered + db + suppliers", tileIds, wantTiles);
+        check("menu tile count", tileIds.size(), 17);
         System.setProperty("java.awt.headless", "true");
         com.nlc.materiallist.model.Project proj = new com.nlc.materiallist.dao.ProjectDao().create("TST", "Smoke");
         new com.nlc.materiallist.ui.ProjectMenuPanel(proj, id -> {});
@@ -89,6 +89,38 @@ public class SmokeCheck {
             built++;
         }
         check("SectionPanel builds for every section", built, 13);
+        com.nlc.materiallist.dao.TakeoffItemDao itemDao = new com.nlc.materiallist.dao.TakeoffItemDao();
+        TakeoffItem saved = it("Stud", "12'", 24.0, null, "", null);
+        saved.projectId = proj.id; saved.sectionId = "roof"; saved.material = "2X4"; saved.species = "DF.No2"; saved.group = "ROOF";
+        itemDao.insert(saved);
+        check("OrderedPanel builds from the database", new com.nlc.materiallist.ui.OrderedPanel(proj) != null, true);
+        // Ordered (auto): sum of QTY by GROUP -> ItemKey
+        String g1 = "1ST FLOOR - WALL";
+        TakeoffItem o1 = it("Stud", "12'", 24.0, null, "", null); o1.material = "2X4"; o1.species = "DF.No2"; o1.group = g1;  // 24/12 = 2
+        TakeoffItem o2 = it("Stud", "12'", 36.0, null, "", null); o2.material = "2X4"; o2.species = "DF.No2"; o2.group = g1;  // 36/12 = 3
+        TakeoffItem o3 = it("Hanger", "", null, null, "", 4.0);   o3.material = "HANGER"; o3.species = "HANGERS_CLIPS"; o3.group = "";  // no group, not in DB
+        TakeoffItem o4 = it("Stud", "12'", null, null, "", null); o4.material = "2X6"; o4.species = "DF.No2"; o4.group = g1;  // no QTY -> skipped
+        TakeoffItem o5 = it("Note", "", null, null, "", 3.0);     o5.group = g1;                                               // empty ItemKey -> skipped
+        MaterialDbEntry od = new MaterialDbEntry(); od.material = "2X4"; od.length = "12'"; od.species = "DF.No2"; od.unitPriceOutTax = 10.0; od.supply = "ACME";
+        Supplier os = new Supplier(); os.name = "ACME"; os.tax = 8.25;
+        Map<String, Map<String, CalcEngine.OrderedLine>> agg =
+            CalcEngine.aggregateByGroup(Arrays.asList(o1, o2, o3, o4, o5), Arrays.asList(od), Arrays.asList(os));
+        CalcEngine.OrderedLine l24 = agg.get(g1).get("2x4|12'|df.no2");
+        check("ordered: same key in same group is summed (2+3)", l24.qty, 5);
+        check("ordered: unit price with tax", Math.abs(l24.unit - 10.825) < 1e-9, true);
+        check("ordered: line total = 5 * 10.825", Math.abs(l24.total() - 54.125) < 1e-9, true);
+        check("ordered: supply from Materials DB", l24.supply, "ACME");
+        check("ordered: blank GROUP becomes (sem grupo)", agg.containsKey(CalcEngine.NO_GROUP), true);
+        check("ordered: key not in DB has no unit price", agg.get(CalcEngine.NO_GROUP).get("hanger|hangers_clips").unit, null);
+        check("ordered: lines without QTY or ItemKey are skipped", agg.get(g1).size(), 1);
+        check("ordered: group order = canonical first, then others",
+            CalcEngine.groupDisplayOrder(new LinkedHashSet<>(Arrays.asList(CalcEngine.NO_GROUP, g1)), SeedData.GROUPS),
+            Arrays.asList(g1, CalcEngine.NO_GROUP));
+        check("ordered: CSV header + first row (as the web export)",
+            com.nlc.materiallist.ui.OrderedPanel.buildCsv(agg).split("\n")[1],
+            "1ST FLOOR - WALL,2X4,12',DF.No2,5,ACME,10.82,54.13");  // same as JS: (10.825).toFixed(2), (10.825*5).toFixed(2)
+        check("fixed2 matches JS toFixed(2) (10.825 -> 10.82)", CalcEngine.fixed2(10.825), "10.82");
+        check("money matches JS (1234.5 -> $1,234.50)", CalcEngine.money(1234.5), "$1,234.50");
         Path dbFile = Paths.get(System.getProperty("user.home"), "NextLevelConstruction", "material_list.db");
         check("db file created under user.home", Files.exists(dbFile), true);
         System.out.println("RESULT pass=" + pass + " fail=" + fail);

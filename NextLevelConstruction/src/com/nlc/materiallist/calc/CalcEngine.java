@@ -1,6 +1,15 @@
 package com.nlc.materiallist.calc;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -181,6 +190,71 @@ public final class CalcEngine {
     public static Double unitPriceOf(MaterialDbEntry d, List<Supplier> suppliers) {
         if (d == null) return null;
         return d.unitPriceOutTax * (1 + taxForSupply(suppliers, d.supply) / 100.0);
+    }
+
+    // ---------------------------------------------------------------
+    // Ordered (auto) — replaces the manual TAKEOFF sheet + Update_ORDERED_All:
+    // sum of QTY by GROUP -> ItemKey across all sections (same as aggregateByGroup in the web app).
+    // ---------------------------------------------------------------
+    public static final String NO_GROUP = "(sem grupo)";
+
+    /** One consolidated line: the first take-off line seen for the key supplies material/length/species/price. */
+    public static final class OrderedLine {
+        public String material, length, species;
+        public int qty;
+        public Double unit;     // unit price with tax; null when the key is not in the Materials DB
+        public String supply;   // null when the key is not in the Materials DB
+        public Double total() { return unit == null ? null : unit * qty; }
+    }
+
+    /**
+     * Group name -> (lower-case ItemKey -> line), both in first-seen order. Pass the items in workbook
+     * section order. Lines with an empty ItemKey or without a QTY are skipped; a blank GROUP becomes NO_GROUP.
+     */
+    public static Map<String, Map<String, OrderedLine>> aggregateByGroup(
+            List<TakeoffItem> items, List<MaterialDbEntry> database, List<Supplier> suppliers) {
+        Map<String, Map<String, OrderedLine>> byGroup = new LinkedHashMap<>();
+        for (TakeoffItem it : items) {
+            String g = (it.group == null || it.group.isEmpty()) ? NO_GROUP : it.group;
+            String k = itemKeyOf(it);
+            if (k.isEmpty()) continue;
+            Integer qty = computeQty(it);
+            if (qty == null || qty == 0) continue;
+            MaterialDbEntry db = findDbEntry(it, database);
+            Map<String, OrderedLine> lines = byGroup.computeIfAbsent(g, x -> new LinkedHashMap<>());
+            OrderedLine line = lines.get(k);
+            if (line == null) {
+                line = new OrderedLine();
+                line.material = it.material; line.length = it.length; line.species = it.species;
+                line.unit = db == null ? null : unitPriceOf(db, suppliers);
+                line.supply = db == null ? null : db.supply;
+                lines.put(k, line);
+            }
+            line.qty += qty;
+        }
+        return byGroup;
+    }
+
+    /**
+     * Two decimals the way JavaScript's toFixed(2) does it: rounded from the exact binary value of the double
+     * (half up), not from its shortest decimal text — so 10.825 gives "10.82" here and in the web app.
+     */
+    public static String fixed2(double v) {
+        return new BigDecimal(v).setScale(2, RoundingMode.HALF_UP).toPlainString();
+    }
+
+    /** Money like the web app's money(): "$1,234.50" (US format, same exact rounding as fixed2). */
+    public static String money(double v) {
+        BigDecimal r = new BigDecimal(v).setScale(2, RoundingMode.HALF_UP);
+        return "$" + new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(Locale.US)).format(r);
+    }
+
+    /** Display order of the groups: the canonical GROUP list first, then any other group found. */
+    public static List<String> groupDisplayOrder(Collection<String> present, List<String> canonical) {
+        List<String> out = new ArrayList<>();
+        for (String g : canonical) if (present.contains(g)) out.add(g);
+        for (String g : present) if (!canonical.contains(g)) out.add(g);
+        return out;
     }
 
     /** Line total = QTY * Unit Price (with tax), or null if either is unavailable. */
