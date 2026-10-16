@@ -75,7 +75,7 @@ public class MainFrame extends JFrame {
         JPanel nav = new JPanel(new GridLayout(1, 3));
         nav.setBackground(INK);
         nav.add(navButton("Home", this::showHome));
-        nav.add(navButton("List", this::showHome)); // starter: List reuses Home's circle grid
+        nav.add(navButton("Lista", this::showList));
         nav.add(navButton("More", this::showAbout));
         return nav;
     }
@@ -107,6 +107,19 @@ public class MainFrame extends JFrame {
             homePanel.reload();
         }
         cards.show(cardHost, "home");
+    }
+
+    private ProjectListPanel listPanel;
+
+    /** Lista (All Jobs): rebuilt each time so new and renamed jobs show up. */
+    public void showList() {
+        currentLevel = "home";   // like Home: the back link has nothing above it
+        currentProject = null;
+        backLink.setText("");
+        if (listPanel != null) cardHost.remove(listPanel);
+        listPanel = new ProjectListPanel(this::openProject);
+        cardHost.add(listPanel, "list");
+        cards.show(cardHost, "list");
     }
 
     public void openProject(Project project) {

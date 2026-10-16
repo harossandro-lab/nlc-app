@@ -248,6 +248,11 @@ public class SmokeCheck {
         javax.swing.SwingUtilities.invokeAndWait(() -> {});
         List<com.nlc.materiallist.dao.AuditDao.Entry> hlog = new com.nlc.materiallist.dao.AuditDao().findLog(hproj.id);
         check("audit hook: edits in the take-off table are logged after the debounce", hlog.size() == 1 ? hlog.get(0).action + ":" + hlog.get(0).itemKey + ":" + hlog.get(0).newQty : "entries=" + hlog.size(), "ADDED:2x4|12'|df.no2:2");
+        // Lista (All Jobs)
+        com.nlc.materiallist.ui.ProjectListPanel lp = new com.nlc.materiallist.ui.ProjectListPanel(p -> {});
+        check("Lista has one row per job", lp.getRowCount(), new com.nlc.materiallist.dao.ProjectDao().findAll().size());
+        check("Lista date like the web (Oct 16, 2026)", com.nlc.materiallist.ui.ProjectListPanel.formatCreated("2026-10-16T12:00:00Z", java.time.ZoneId.of("UTC")), "Oct 16, 2026");
+        check("Lista date: blank shows a dash", com.nlc.materiallist.ui.ProjectListPanel.formatCreated("", java.time.ZoneId.of("UTC")), "—");
         Path dbFile = Paths.get(System.getProperty("user.home"), "NextLevelConstruction", "material_list.db");
         check("db file created under user.home", Files.exists(dbFile), true);
         System.out.println("RESULT pass=" + pass + " fail=" + fail);
