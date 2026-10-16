@@ -8,6 +8,13 @@ _FRACTION = re.compile(r"(\.\d{6})\d+")
 DASH = "—"
 
 
+def number_text(v) -> str:
+    """A number as the user would type it: 8.25 -> "8.25", 3.0 -> "3", None -> ""."""
+    if v is None:
+        return ""
+    return str(int(v)) if float(v) == int(v) else str(v)
+
+
 def _parse_iso(iso: str, zone: Optional[tzinfo]) -> datetime:
     dt = datetime.fromisoformat(_FRACTION.sub(r"\1", iso.strip()).replace("Z", "+00:00"))
     if dt.tzinfo is None:

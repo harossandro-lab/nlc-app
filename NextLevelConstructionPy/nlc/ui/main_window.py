@@ -12,9 +12,11 @@ from ..models import Project
 from ..tiles import TILES
 from .audit_log import AuditPanel
 from .home import HomePanel
+from .materials_db import MaterialsDbPanel
 from .ordered import OrderedPanel
 from .project_list import ProjectListPanel
 from .project_menu import ProjectMenuPanel
+from .suppliers import SuppliersPanel
 
 
 class PlaceholderPanel(QWidget):
@@ -147,6 +149,10 @@ class MainWindow(QMainWindow):
             return OrderedPanel(self.conn, project)
         if tile_id == "audit":
             return AuditPanel(self.conn, project)
+        if tile_id == "database":
+            return MaterialsDbPanel(self.conn, project)
+        if tile_id == "suppliers":
+            return SuppliersPanel(self.conn, project)
         return PlaceholderPanel(dict(TILES).get(tile_id, tile_id))
 
     def go_back_one_level(self) -> None:

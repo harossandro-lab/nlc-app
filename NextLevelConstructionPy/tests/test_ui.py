@@ -10,7 +10,9 @@ from pathlib import Path
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 try:
+    from PySide6.QtCore import Qt
     from PySide6.QtWidgets import QApplication
+    Qt_ItemIsEditable = Qt.ItemIsEditable
     HAVE_QT = True
 except ImportError:  # pragma: no cover
     HAVE_QT = False
@@ -168,6 +170,97 @@ class MainWindowTests(unittest.TestCase):
         with mock.patch("nlc.ui.report_table.QFileDialog.getSaveFileName", return_value=("", "")):
             self.assertFalse(panel.export_csv())
         self.assertFalse(other.exists())
+
+    # ---- Suppliers & Tax and Materials DB ----
+    def _open(self, tile_id):
+        self.win.open_project(self.avn)
+        self.win.open_tile(tile_id)
+        return self.win.stack.currentWidget()
+
+    @staticmethod
+    def _set(panel, row, col, text):
+        return panel.model.setData(panel.model.index(row, col), text)
+
+    def test_suppliers_screen_shows_the_default_suppliers(self):
+        panel = self._open("suppliers")
+        m = panel.model
+        self.assertEqual([m.index(r, 0).data() for r in range(m.rowCount())], ["FACTORY", "FIELD"])
+        self.assertEqual([m.headerData(c, Qt.Horizontal) for c in range(m.columnCount())],
+                         ["Supply (name)", "Tax %", "Delay (days)", ""])
+        self.assertEqual(m.index(0, 1).data(), "0")
+
+    def test_suppliers_edit_is_saved_and_text_in_a_number_cell_is_rejected(self):
+        from nlc.dao import SupplierDao
+        panel = self._open("suppliers")
+        self.assertTrue(self._set(panel, 0, 1, "8.25"))
+        self.assertTrue(self._set(panel, 0, 2, "3.7"))
+        self.assertFalse(self._set(panel, 0, 1, "abc"))                  # rejected: the old value stays
+        self.assertEqual(panel.model.index(0, 1).data(), "8.25")
+        self.assertTrue(self._set(panel, 1, 0, "  YARD  "))
+        saved = SupplierDao(self.conn).find_by_project(self.avn.id)
+        self.assertEqual([(s.name, s.tax, s.delay) for s in saved], [("FACTORY", 8.25, 3), ("YARD", 0.0, 0)])
+        self.assertTrue(self._set(panel, 0, 1, ""))                       # blank means 0, like the web
+        self.assertEqual(SupplierDao(self.conn).find_by_project(self.avn.id)[0].tax, 0.0)
+
+    def test_suppliers_add_and_delete(self):
+        from nlc.dao import SupplierDao
+        panel = self._open("suppliers")
+        panel.add_row()
+        self.assertEqual(panel.model.rowCount(), 3)
+        self.assertEqual(len(SupplierDao(self.conn).find_by_project(self.avn.id)), 3)
+        panel._cell_clicked(panel.model.index(2, panel.model.delete_column))      # click the ×
+        self.assertEqual(panel.model.rowCount(), 2)
+        panel._cell_clicked(panel.model.index(0, 0))                              # any other cell does not delete
+        self.assertEqual(len(SupplierDao(self.conn).find_by_project(self.avn.id)), 2)
+
+    def test_materials_db_prices_with_the_supplier_tax(self):
+        from nlc.dao import MaterialDbDao, SupplierDao
+        sup = SupplierDao(self.conn).find_by_project(self.avn.id)[0]          # FACTORY
+        sup.tax = 10.0
+        SupplierDao(self.conn).update(sup)
+        panel = self._open("database")
+        self.assertEqual(panel.model.rowCount(), 0)
+        self.assertFalse(panel.empty_label.isHidden())                          # "No materials yet."
+        panel.add_row()
+        self.assertTrue(panel.empty_label.isHidden())
+        self.assertEqual(panel.model.index(0, 3).data(), "FACTORY")              # new rows start at FACTORY
+        self._set(panel, 0, 0, "2X4")
+        self._set(panel, 0, 1, "12'")
+        self._set(panel, 0, 2, "DF.No2")
+        self.assertTrue(self._set(panel, 0, 4, "10"))
+        self.assertEqual((panel.model.index(0, 5).data(), panel.model.index(0, 6).data()), ("10.00", "11.00"))
+        self.assertFalse(self._set(panel, 0, 4, "ten"))
+        self._set(panel, 0, 3, "NOPE")                                          # unknown supplier: tax 0
+        self.assertEqual((panel.model.index(0, 5).data(), panel.model.index(0, 6).data()), ("0.00", "10.00"))
+        saved = MaterialDbDao(self.conn).find_by_project(self.avn.id)[0]
+        self.assertEqual((saved.material, saved.length, saved.species, saved.supply, saved.unit_price_out_tax),
+                         ("2X4", "12'", "DF.No2", "NOPE", 10.0))
+
+    def test_materials_db_columns_and_suggestions(self):
+        from nlc.seed import LENGTHS, SPECIES
+        panel = self._open("database")
+        m = panel.model
+        self.assertEqual([m.headerData(c, Qt.Horizontal) for c in range(m.columnCount())],
+                         ["Material", "Length", "Species", "Supply", "Unit $ (no tax)", "Tax%", "Unit $ (final)", ""])
+        panel.add_row()
+        self.assertTrue(m.flags(m.index(0, 4)) & Qt_ItemIsEditable)
+        self.assertFalse(m.flags(m.index(0, 5)) & Qt_ItemIsEditable)               # Tax% is computed
+        self.assertFalse(m.flags(m.index(0, 6)) & Qt_ItemIsEditable)               # final price is computed
+        self.assertEqual(panel.table.itemDelegateForColumn(1).options, LENGTHS)
+        self.assertEqual(panel.table.itemDelegateForColumn(2).options, SPECIES)
+        self.assertEqual(panel.table.itemDelegateForColumn(3).options, ["FACTORY", "FIELD"])
+
+    def test_materials_db_delete_and_reopen(self):
+        from nlc.dao import MaterialDbDao
+        panel = self._open("database")
+        panel.add_row()
+        panel.add_row()
+        self._set(panel, 1, 0, "KEEP")
+        panel._cell_clicked(panel.model.index(0, panel.model.delete_column))
+        self.assertEqual([d.material for d in MaterialDbDao(self.conn).find_by_project(self.avn.id)], ["KEEP"])
+        self.win.go_back_one_level()
+        self.win.open_tile("database")
+        self.assertEqual(self.win.stack.currentWidget().model.index(0, 0).data(), "KEEP")
 
     def test_circle_click_emits(self):
         from PySide6.QtCore import QPoint, Qt
