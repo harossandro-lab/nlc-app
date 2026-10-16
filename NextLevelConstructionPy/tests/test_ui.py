@@ -108,6 +108,67 @@ class MainWindowTests(unittest.TestCase):
         self.win.show_list()
         self.assertEqual(self.win.stack.currentWidget().rows, [])
 
+    def _add_stud(self, lf, group="1ST FLOOR - WALL"):
+        return TakeoffItemDao(self.conn).insert(TakeoffItem(
+            project_id=self.avn.id, section_id="1st-walls", purpose="Stud", length="12'", lf=lf, material="2X4",
+            species="DF.No2", group=group))
+
+    def test_ordered_screen_sums_by_group_and_exports_csv(self):
+        from nlc.dao import MaterialDbDao
+        from nlc.models import MaterialDbEntry
+        MaterialDbDao(self.conn).insert(MaterialDbEntry(project_id=self.avn.id, material="2X4", length="12'",
+                                                        species="DF.No2", unit_price_out_tax=10.0, supply="FACTORY"))
+        self._add_stud(24.0)     # 2
+        self._add_stud(36.0)     # 3
+        self.win.open_project(self.avn)
+        self.win.open_tile("ordered")
+        panel = self.win.stack.currentWidget()
+        self.assertEqual([r.kind for r in panel.rows], ["GROUP", "ITEM", "SUBTOTAL", "GRAND"])
+        self.assertEqual(panel.rows[1].cells[2], "5")
+        self.assertEqual(panel.rows[3].cells[5], "$50.00")
+        self.assertEqual(panel.table.columnSpan(0, 0), 6)           # group header runs across the row
+        self.assertEqual(panel.table.columnSpan(2, 0), 5)           # subtotal label runs up to the total column
+        self.assertIsNone(panel.empty_label)
+        self.assertEqual(panel.csv_text().split("\n")[1], "1ST FLOOR - WALL,2X4,12',DF.No2,5,FACTORY,10.00,50.00")
+
+    def test_ordered_screen_without_items_shows_the_hint(self):
+        self.win.open_project(self.avn)
+        self.win.open_tile("ordered")
+        panel = self.win.stack.currentWidget()
+        self.assertEqual(panel.rows, [])
+        self.assertIn("Nenhum item", panel.empty_label.text())
+
+    def test_audit_screen_lists_changes_newest_first(self):
+        item = self._add_stud(24.0)
+        self.win.open_project(self.avn)                              # baseline: qty 2, no entries
+        item.lf = 36.0
+        TakeoffItemDao(self.conn).update(item)                       # qty 3, not compared yet
+        self.win.open_tile("audit")                                  # opening the screen catches up
+        panel = self.win.stack.currentWidget()
+        self.assertEqual([r.cells[1:] for r in panel.rows], [["CHANGED", "2x4|12'|df.no2", "2", "3"]])
+        self.assertEqual(panel.rows[0].tone[1], "warn")
+
+    def test_audit_screen_empty_hint(self):
+        self.win.open_project(self.avn)
+        self.win.open_tile("audit")
+        self.assertIn("Nenhuma mudança", self.win.stack.currentWidget().empty_label.text())
+
+    def test_export_csv_writes_the_file_and_cancel_does_nothing(self):
+        from unittest import mock
+        self._add_stud(24.0)
+        self.win.open_project(self.avn)
+        self.win.open_tile("ordered")
+        panel = self.win.stack.currentWidget()
+        target = Path(self.tmp.name) / "out.csv"
+        with mock.patch("nlc.ui.report_table.QFileDialog.getSaveFileName", return_value=(str(target), "CSV (*.csv)")):
+            self.assertTrue(panel.export_csv())
+        self.assertEqual(target.read_text(encoding="utf-8"), panel.csv_text())
+        self.assertTrue(target.read_text(encoding="utf-8").startswith("Group,Material,Length,Species,Qty,"))
+        other = Path(self.tmp.name) / "none.csv"
+        with mock.patch("nlc.ui.report_table.QFileDialog.getSaveFileName", return_value=("", "")):
+            self.assertFalse(panel.export_csv())
+        self.assertFalse(other.exists())
+
     def test_circle_click_emits(self):
         from PySide6.QtCore import QPoint, Qt
         from PySide6.QtTest import QTest

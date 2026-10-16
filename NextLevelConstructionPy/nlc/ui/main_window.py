@@ -10,7 +10,9 @@ from PySide6.QtWidgets import (QFrame, QHBoxLayout, QLabel, QMainWindow, QMessag
 from .. import audit, db
 from ..models import Project
 from ..tiles import TILES
+from .audit_log import AuditPanel
 from .home import HomePanel
+from .ordered import OrderedPanel
 from .project_list import ProjectListPanel
 from .project_menu import ProjectMenuPanel
 
@@ -136,8 +138,16 @@ class MainWindow(QMainWindow):
         assert self.current_project is not None
         self.current_level = "screen"
         self.back_link.setText("← " + self.current_project.name)
-        label = dict(TILES).get(tile_id, tile_id)
-        self._show(PlaceholderPanel(label))
+        self._show(self._build_screen(tile_id))
+
+    def _build_screen(self, tile_id: str) -> QWidget:
+        """The screen behind a circle; the ones not ported yet show a placeholder."""
+        project = self.current_project
+        if tile_id == "ordered":
+            return OrderedPanel(self.conn, project)
+        if tile_id == "audit":
+            return AuditPanel(self.conn, project)
+        return PlaceholderPanel(dict(TILES).get(tile_id, tile_id))
 
     def go_back_one_level(self) -> None:
         if self.current_level == "screen" and self.current_project is not None:
