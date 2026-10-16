@@ -14,6 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.nlc.materiallist.model.MaterialDbEntry;
+import com.nlc.materiallist.model.ReceivedEntry;
 import com.nlc.materiallist.model.Supplier;
 import com.nlc.materiallist.model.TakeoffItem;
 
@@ -233,6 +234,44 @@ public final class CalcEngine {
             line.qty += qty;
         }
         return byGroup;
+    }
+
+    // ---------------------------------------------------------------
+    // Received — delivery log, compared with Ordered by GROUP (same rules as the web app's Received tab)
+    // ---------------------------------------------------------------
+
+    /** Price of a delivered line = Materials DB unit price (with tax) * qty, or null when the key is not in the DB. */
+    public static Double receivedLineTotal(ReceivedEntry r, List<MaterialDbEntry> database, List<Supplier> suppliers) {
+        TakeoffItem key = new TakeoffItem();
+        key.material = r.material; key.length = r.length; key.species = r.species;
+        MaterialDbEntry db = findDbEntry(key, database);
+        Double unit = db == null ? null : unitPriceOf(db, suppliers);
+        double qty = r.qty == null ? 0 : r.qty;
+        return unit == null ? null : unit * qty;
+    }
+
+    /** Ordered value of one group: sum of unit price * qty over the lines that have a price. */
+    public static double orderedTotal(Map<String, OrderedLine> lines) {
+        double sum = 0;
+        for (OrderedLine l : lines.values()) if (l.unit != null) sum += l.unit * l.qty;
+        return sum;
+    }
+
+    /** Delivered value of one group: sum of the priced deliveries whose GROUP is exactly this one. */
+    public static double deliveredTotal(String group, List<ReceivedEntry> received,
+                                        List<MaterialDbEntry> database, List<Supplier> suppliers) {
+        double sum = 0;
+        for (ReceivedEntry r : received) {
+            if (!group.equals(r.group)) continue;
+            Double t = receivedLineTotal(r, database, suppliers);
+            if (t != null) sum += t;
+        }
+        return sum;
+    }
+
+    /** Delivered as a percentage of ordered, capped at 100 (0 when nothing was ordered). */
+    public static double deliveredPercent(double delivered, double ordered) {
+        return ordered != 0 ? Math.min(100, delivered / ordered * 100) : 0;
     }
 
     /**

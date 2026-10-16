@@ -55,6 +55,24 @@ CREATE TABLE IF NOT EXISTS takeoff_items (
     status       TEXT DEFAULT 'pending'
 );
 
+-- Received: one row per delivery (ticket / invoice / date). Newest rows have the highest id.
+CREATE TABLE IF NOT EXISTS received_log (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id  TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    group_name  TEXT DEFAULT '',
+    location    TEXT DEFAULT 'FACTORY',
+    supply      TEXT DEFAULT '',
+    date        TEXT DEFAULT '',
+    material    TEXT DEFAULT '',
+    length      TEXT DEFAULT '',
+    species     TEXT DEFAULT '',
+    qty         REAL,
+    ticket      TEXT DEFAULT '',
+    invoice     TEXT DEFAULT '',
+    payment     TEXT DEFAULT ''
+);
+
+CREATE INDEX IF NOT EXISTS idx_received_project ON received_log(project_id);
 CREATE INDEX IF NOT EXISTS idx_items_project_section ON takeoff_items(project_id, section_id);
 CREATE INDEX IF NOT EXISTS idx_materials_project ON materials_db(project_id);
 CREATE INDEX IF NOT EXISTS idx_suppliers_project ON suppliers(project_id);

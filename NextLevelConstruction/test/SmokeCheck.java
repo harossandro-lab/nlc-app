@@ -121,6 +121,39 @@ public class SmokeCheck {
             "1ST FLOOR - WALL,2X4,12',DF.No2,5,ACME,10.82,54.13");  // same as JS: (10.825).toFixed(2), (10.825*5).toFixed(2)
         check("fixed2 matches JS toFixed(2) (10.825 -> 10.82)", CalcEngine.fixed2(10.825), "10.82");
         check("money matches JS (1234.5 -> $1,234.50)", CalcEngine.money(1234.5), "$1,234.50");
+        // Received: delivery log + delivered vs ordered by group
+        com.nlc.materiallist.model.ReceivedEntry r1 = new com.nlc.materiallist.model.ReceivedEntry();
+        r1.group = g1; r1.material = "2x4"; r1.length = "12'"; r1.species = "df.no2"; r1.qty = 2.0;       // key matches ignoring case
+        com.nlc.materiallist.model.ReceivedEntry r2 = new com.nlc.materiallist.model.ReceivedEntry();
+        r2.group = g1; r2.material = "2X6"; r2.species = "DF.No2"; r2.qty = 9.0;                           // not in the DB -> no price
+        com.nlc.materiallist.model.ReceivedEntry r3 = new com.nlc.materiallist.model.ReceivedEntry();
+        r3.group = "ROOF"; r3.material = "2X4"; r3.length = "12'"; r3.species = "DF.No2"; r3.qty = 1.0;   // other group
+        List<com.nlc.materiallist.model.ReceivedEntry> recv = Arrays.asList(r1, r2, r3);
+        check("received: line total = qty * unit price (key ignores case)", Math.abs(CalcEngine.receivedLineTotal(r1, Arrays.asList(od), Arrays.asList(os)) - 21.65) < 1e-9, true);
+        check("received: key not in DB has no total", CalcEngine.receivedLineTotal(r2, Arrays.asList(od), Arrays.asList(os)), null);
+        r1.qty = null;
+        check("received: empty qty counts as 0", CalcEngine.receivedLineTotal(r1, Arrays.asList(od), Arrays.asList(os)), 0.0);
+        r1.qty = 2.0;
+        check("received: delivered total counts only this group", Math.abs(CalcEngine.deliveredTotal(g1, recv, Arrays.asList(od), Arrays.asList(os)) - 21.65) < 1e-9, true);
+        check("received: ordered total of the group (5 * 10.825)", Math.abs(CalcEngine.orderedTotal(agg.get(g1)) - 54.125) < 1e-9, true);
+        check("received: delivered % = 21.65/54.125 -> 40%", Math.round(CalcEngine.deliveredPercent(21.65, 54.125)), 40L);
+        check("received: delivered % capped at 100", CalcEngine.deliveredPercent(80.0, 54.125), 100.0);
+        check("received: delivered % is 0 when nothing was ordered", CalcEngine.deliveredPercent(5.0, 0.0), 0.0);
+        // Received table (DAO + schema)
+        com.nlc.materiallist.dao.ReceivedDao rdao = new com.nlc.materiallist.dao.ReceivedDao();
+        com.nlc.materiallist.model.Project rproj = new com.nlc.materiallist.dao.ProjectDao().create("RCV", "Received smoke");
+        com.nlc.materiallist.model.ReceivedEntry first = new com.nlc.materiallist.model.ReceivedEntry();
+        first.projectId = rproj.id; first.group = g1; first.ticket = "T-1"; first.qty = 4.0; rdao.insert(first);
+        com.nlc.materiallist.model.ReceivedEntry second = new com.nlc.materiallist.model.ReceivedEntry();
+        second.projectId = rproj.id; second.ticket = "T-2"; rdao.insert(second);
+        List<com.nlc.materiallist.model.ReceivedEntry> saved2 = rdao.findByProject(rproj.id);
+        check("received dao: newest first", saved2.get(0).ticket, "T-2");
+        check("received dao: empty qty stays null", saved2.get(0).qty, null);
+        check("received dao: qty round trip", saved2.get(1).qty, 4.0);
+        saved2.get(1).payment = "Paid"; saved2.get(1).date = "2026-10-16"; rdao.update(saved2.get(1));
+        check("received dao: update persists", rdao.findByProject(rproj.id).get(1).payment + "|" + rdao.findByProject(rproj.id).get(1).date, "Paid|2026-10-16");
+        rdao.delete(saved2.get(0).id);
+        check("received dao: delete", rdao.findByProject(rproj.id).size(), 1);
         Path dbFile = Paths.get(System.getProperty("user.home"), "NextLevelConstruction", "material_list.db");
         check("db file created under user.home", Files.exists(dbFile), true);
         System.out.println("RESULT pass=" + pass + " fail=" + fail);

@@ -2,7 +2,7 @@
 
 Replaces Next Level Construction's Excel/VBA material-takeoff workbooks with an app the whole team can use.
 The user (Sandro) is a construction professional and writes in Brazilian Portuguese.
-Last verified 2026-10-16: Java build + `test/SmokeCheck.java` (48/48) on JDK 21 (Linux) and JDK 25 (Windows 11, PowerShell block below); web app exercised in headless Chromium.
+Last verified 2026-10-16: Java build + `test/SmokeCheck.java` (61/61) on JDK 21 (Linux) and JDK 25 (Windows 11, PowerShell block below); web app exercised in headless Chromium.
 
 ## Working agreements
 - Talk to the user in Brazilian Portuguese (pt-BR), in plain language. Code, identifiers, comments and commit messages stay in English.
@@ -89,7 +89,7 @@ QTY of a take-off line — first matching rule wins, then waste and rounding:
 - Package `com.nlc.materiallist`: `calc/CalcEngine` (ALL business logic), `data/SeedData` (generated from the web seed), `db/Database`,
   `dao/*`, `model/*`, `ui/*`.
 - Data: one SQLite file for all jobs at `~/NextLevelConstruction/material_list.db`; tables `projects`, `project_info`, `suppliers`,
-  `materials_db`, `takeoff_items`, all keyed by `project_id` (ON DELETE CASCADE); schema in `resources/schema.sql`, read from the classpath.
+  `materials_db`, `takeoff_items`, `received_log`, all keyed by `project_id` (ON DELETE CASCADE); schema in `resources/schema.sql`, read from the classpath.
 - UI: `MainFrame` (CardLayout) → `HomePanel` → `ProjectMenuPanel` (circles) → `DashboardPanel` / `OrderedPanel` / generic `SectionPanel`
   (JTable + `TakeoffTableModel`) / `MaterialsDbPanel` / `SuppliersPanel`. `MaterialCellEditor` rebuilds the MATERIAL combo from the
   row's SPECIES every time the cell is edited. Every edit is written to SQLite immediately (no save button).
@@ -100,7 +100,7 @@ QTY of a take-off line — first matching rule wins, then waste and rounding:
 mkdir -p bin
 javac --release 17 -encoding UTF-8 -cp lib/sqlite-jdbc-3.36.0.3.jar -d bin $(find src -name "*.java")
 java -cp "bin:resources:lib/sqlite-jdbc-3.36.0.3.jar" com.nlc.materiallist.Main     # GUI, needs a display
-# logic check without GUI; a throwaway user.home keeps the real database untouched. Expect: RESULT pass=48 fail=0
+# logic check without GUI; a throwaway user.home keeps the real database untouched. Expect: RESULT pass=61 fail=0
 javac --release 17 -cp "bin:lib/sqlite-jdbc-3.36.0.3.jar" -d /tmp/nlc-smoke test/SmokeCheck.java
 java -Duser.home=/tmp/nlc-home -cp "/tmp/nlc-smoke:bin:resources:lib/sqlite-jdbc-3.36.0.3.jar" SmokeCheck
 ```
