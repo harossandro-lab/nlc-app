@@ -422,6 +422,172 @@ class MainWindowTests(unittest.TestCase):
         self.assertEqual(describe_counts({"takeoff lines": 3, "materials": 0, "deliveries": 2}), "3 takeoff lines, 2 deliveries")
         self.assertEqual(describe_counts({"materials": 0}), "no records besides the job itself")
 
+    # ---- take-off sections ----
+    COL = dict(group=0, purpose=1, detail=2, material=3, length=4, species=5, lf=6, sf=7, sp=8, ea=9, qty=10,
+               location=11, unit=12, total=13, status=14, delete=15)
+
+    def _price_2x4(self, price=10.0):
+        from nlc.dao import MaterialDbDao
+        from nlc.models import MaterialDbEntry
+        MaterialDbDao(self.conn).insert(MaterialDbEntry(project_id=self.avn.id, material="2X4", length="12'",
+                                                        species="DF.No2", unit_price_out_tax=price, supply="FACTORY"))
+
+    def _fill_stud(self, panel, row=0, lf="24"):
+        c = self.COL
+        for key, text in (("purpose", "Stud"), ("material", "2X4"), ("length", "12'"), ("species", "DF.No2"), ("lf", lf)):
+            self.assertTrue(self._set(panel, row, c[key], text), key)
+
+    def test_all_13_sections_open_with_the_right_default_group(self):
+        from nlc.seed import DEFAULT_GROUP, SECTIONS
+        self.win.open_project(self.avn)
+        for sec in SECTIONS:
+            self.win.open_tile(sec["id"])
+            panel = self.win.stack.currentWidget()
+            self.assertEqual(panel.section["id"], sec["id"])
+            self.assertEqual(panel.model.rowCount(), 0)
+            panel.add_row()
+            self.assertEqual(panel.model.index(0, self.COL["group"]).data(), DEFAULT_GROUP.get(sec["id"], ""))
+            self.assertEqual(panel.model.index(0, self.COL["location"]).data(), "FACTORY")
+            self.assertEqual(panel.model.index(0, self.COL["status"]).data(), "Pending")
+            self.win.go_back_one_level()
+        self.assertEqual(len(SECTIONS), 13)
+
+    def test_section_columns_and_suggestions(self):
+        from nlc.seed import GROUPS, LENGTHS, LOCATIONS, SECTIONS, SPECIES
+        from nlc import takeoff
+        panel = self._open("roof")
+        m = panel.model
+        self.assertEqual([m.headerData(c, Qt.Horizontal) for c in range(m.columnCount())],
+                         ["Group", "Purpose", "Page/Detail", "Material", "Length", "Species", "LF", "SF", "SP", "EA", "QTY",
+                          "Location", "Unit $", "Total", "Status", ""])
+        t = panel.table
+        c = self.COL
+        self.assertEqual(t.itemDelegateForColumn(c["group"]).options, GROUPS)
+        self.assertEqual(t.itemDelegateForColumn(c["purpose"]).options, next(s for s in SECTIONS if s["id"] == "roof")["purposes"])
+        self.assertEqual(t.itemDelegateForColumn(c["length"]).options, LENGTHS)
+        self.assertEqual(t.itemDelegateForColumn(c["species"]).options, SPECIES)
+        self.assertEqual(t.itemDelegateForColumn(c["sp"]).options, takeoff.SP_OPTIONS)
+        self.assertEqual(t.itemDelegateForColumn(c["location"]).options, LOCATIONS)
+        panel.add_row()
+        for computed in ("qty", "unit", "total", "status"):
+            self.assertFalse(m.flags(m.index(0, c[computed])) & Qt_ItemIsEditable, computed)
+
+    def test_material_choices_follow_the_species_of_the_row(self):
+        from nlc.seed import materials_for_species
+        panel = self._open("roof")
+        panel.add_row()
+        c = self.COL
+        delegate = panel.table.itemDelegateForColumn(c["material"])
+        index = panel.model.index(0, c["material"])
+        self.assertEqual(delegate.options_for(index), [])                         # no species yet
+        self._set(panel, 0, c["species"], "LVL")
+        self.assertEqual(delegate.options_for(index), materials_for_species("LVL"))
+        self.assertEqual(len(delegate.options_for(index)), 90)
+        self._set(panel, 0, c["species"], "DF.No2")
+        self.assertEqual(delegate.options_for(index), ["2x4", "2x6", "2x8", "2x10", "2x12", "4x4", "6x6"])
+        editor = delegate.createEditor(panel.table, None, index)                  # the drop-down really shows them
+        self.assertEqual([editor.itemText(i) for i in range(editor.count())], [""] + delegate.options_for(index))
+
+    def test_qty_price_and_totals_update_as_you_type(self):
+        from nlc.dao import TakeoffItemDao
+        self._price_2x4(10.0)
+        panel = self._open("roof")
+        panel.add_row()
+        self.assertEqual(panel.model.index(0, self.COL["qty"]).data(), "—")
+        self._fill_stud(panel)
+        c = self.COL
+        self.assertEqual([panel.model.index(0, c[k]).data() for k in ("qty", "unit", "total")], ["2", "10.00", "$20.00"])
+        self.assertEqual(panel.subtitle_label.text(), "1 line item(s) · estimated $20.00")
+        self.assertEqual(panel.total_label.text(), "Section total   $20.00")
+        self.assertTrue(self._set(panel, 0, c["lf"], "7,5"))                       # decimal comma
+        self.assertEqual(panel.model.index(0, c["lf"]).data(), "7.5")
+        self.assertFalse(self._set(panel, 0, c["lf"], "abc"))                      # rejected, old value stays
+        self.assertEqual(panel.model.index(0, c["lf"]).data(), "7.5")
+        self.assertTrue(self._set(panel, 0, c["lf"], ""))                          # blank empties it
+        self.assertEqual(panel.model.index(0, c["qty"]).data(), "—")
+        self._set(panel, 0, c["lf"], "100")
+        self._set(panel, 0, c["sp"], '16"')                                        # spacing rule: 100*12/16 = 75
+        self.assertEqual(panel.model.index(0, c["qty"]).data(), "75")
+        saved = TakeoffItemDao(self.conn).find_by_section(self.avn.id, "roof")[0]
+        self.assertEqual((saved.material, saved.lf, saved.sp, saved.species), ("2X4", 100.0, '16"', "DF.No2"))
+
+    def test_status_pill_cycles_and_is_saved(self):
+        from nlc.dao import TakeoffItemDao
+        panel = self._open("roof")
+        panel.add_row()
+        status = lambda: TakeoffItemDao(self.conn).find_by_section(self.avn.id, "roof")[0].status
+        seen = []
+        for _ in range(3):
+            panel._cell_clicked(panel.model.index(0, self.COL["status"]))
+            seen.append((panel.model.index(0, self.COL["status"]).data(), status()))
+        self.assertEqual(seen, [("Ordered", "ordered"), ("Received", "received"), ("Pending", "pending")])
+        bg = panel.model.index(0, self.COL["status"]).data(Qt.BackgroundRole)
+        self.assertEqual(bg.color().name().upper(), "#F1F3F5")                       # pending pill background
+
+    def test_delete_and_filter(self):
+        panel = self._open("roof")
+        for material in ("2X4", "2X6", "HANGER"):
+            panel.add_row()
+            self._set(panel, panel.model.rowCount() - 1, self.COL["material"], material)
+        panel.set_filter("2x6")
+        self.assertEqual((panel.visible_row_count(), panel.model.rowCount()), (1, 3))   # only hidden, never deleted
+        panel.set_filter("  ")
+        self.assertEqual(panel.visible_row_count(), 3)
+        panel.set_filter("factory")                                                     # location is searched too
+        self.assertEqual(panel.visible_row_count(), 3)
+        panel.set_filter("nothing like this")
+        self.assertEqual(panel.visible_row_count(), 0)
+        panel.set_filter("hanger")
+        self.assertEqual([r for r in range(3) if not panel.table.isRowHidden(r)], [2])   # the HANGER row is the visible one
+        panel._cell_clicked(panel.model.index(2, self.COL["delete"]))
+        self.assertEqual([panel.model.index(r, self.COL["material"]).data() for r in range(panel.model.rowCount())],
+                         ["2X4", "2X6"])
+
+    def test_edits_trigger_the_audit_comparison(self):
+        from nlc.dao import AuditDao
+        self._price_2x4()
+        panel = self._open("roof")                                                       # opening stores the baseline
+        ad = AuditDao(self.conn)
+        self.assertEqual(ad.count_log(self.avn.id), 0)
+        panel.add_row()
+        self._fill_stud(panel)
+        self.assertTrue(panel._audit_timer.isActive())                                   # waits 1.4 s after the last edit
+        self.assertEqual(panel._audit_timer.interval(), 1400)
+        self.assertEqual(ad.count_log(self.avn.id), 0)
+        panel.flush()
+        self.assertFalse(panel._audit_timer.isActive())
+        self.assertEqual([(e.action, e.item_key, e.new_qty) for e in ad.find_log(self.avn.id)],
+                         [("ADDED", "2x4|12'|df.no2", 2)])
+        panel.flush()                                                                    # nothing pending: no new entry
+        self.assertEqual(ad.count_log(self.avn.id), 1)
+
+    def test_leaving_the_screen_runs_the_pending_comparison(self):
+        from nlc.dao import AuditDao
+        panel = self._open("roof")
+        panel.add_row()
+        self._fill_stud(panel, lf="36")
+        self.win.go_back_one_level()                                                     # back to the project menu
+        self.assertEqual([(e.action, e.new_qty) for e in AuditDao(self.conn).find_log(self.avn.id)], [("ADDED", 3)])
+
+    def test_section_export_csv(self):
+        from unittest import mock
+        self._price_2x4(10.0)
+        panel = self._open("roof")
+        panel.add_row()
+        self._fill_stud(panel)
+        target = Path(self.tmp.name) / "roof.csv"
+        with mock.patch("nlc.ui.report_table.QFileDialog.getSaveFileName", return_value=(str(target), "CSV (*.csv)")):
+            self.assertTrue(panel.export_csv())
+        text = target.read_bytes().decode("utf-8-sig")
+        lines = text.split("\r\n")
+        self.assertTrue(lines[0].startswith("Group,Purpose,Page/Detail,Material,"))
+        self.assertEqual(lines[1], "ROOF,Stud,,2X4,12',DF.No2,24,,,,2,FACTORY,2X4|12'|DF.No2,10.00,20.00,pending")
+
+    def test_unknown_section_is_refused(self):
+        from nlc.ui.takeoff import TakeoffPanel
+        with self.assertRaises(ValueError):
+            TakeoffPanel(self.conn, self.avn, "nope")
+
     def test_circle_click_emits(self):
         from PySide6.QtCore import QPoint, Qt
         from PySide6.QtTest import QTest

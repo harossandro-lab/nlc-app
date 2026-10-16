@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (QFrame, QHBoxLayout, QLabel, QMainWindow, QMessag
 
 from .. import audit, db
 from ..models import Project
-from ..tiles import TILES
+from ..tiles import SECTION_IDS, TILES
 from .audit_log import AuditPanel
 from .config import ConfigPanel
 from .dashboard import DashboardPanel
@@ -20,6 +20,7 @@ from .project_list import ProjectListPanel
 from .project_menu import ProjectMenuPanel
 from .received import ReceivedPanel
 from .suppliers import SuppliersPanel
+from .takeoff import TakeoffPanel
 
 
 class PlaceholderPanel(QWidget):
@@ -108,6 +109,7 @@ class MainWindow(QMainWindow):
         for i in reversed(range(self.stack.count())):
             w = self.stack.widget(i)
             if w is not widget and w is not keep:
+                getattr(w, "flush", lambda: None)()        # a take-off screen runs its pending audit comparison
                 self.stack.removeWidget(w)
                 w.deleteLater()
         if self.stack.indexOf(widget) < 0:
@@ -140,7 +142,13 @@ class MainWindow(QMainWindow):
         panel.open_project.connect(self.open_project)
         self._show(panel)
 
+    def _flush_current(self) -> None:
+        """Runs the audit comparison a take-off screen is still waiting for (it must happen before anything else
+        looks at the audit state: a baseline taken after an unflushed edit would swallow that edit)."""
+        getattr(self.stack.currentWidget(), "flush", lambda: None)()
+
     def open_project(self, project: Project) -> None:
+        self._flush_current()
         self.current_project = project
         audit.ensure_baseline(self.conn, project.id)
         self.current_level = "project-menu"
@@ -170,6 +178,8 @@ class MainWindow(QMainWindow):
             return MaterialsDbPanel(self.conn, project)
         if tile_id == "suppliers":
             return SuppliersPanel(self.conn, project)
+        if tile_id in SECTION_IDS:
+            return TakeoffPanel(self.conn, project, tile_id)
         return PlaceholderPanel(dict(TILES).get(tile_id, tile_id))
 
     def go_back_one_level(self) -> None:
@@ -177,6 +187,10 @@ class MainWindow(QMainWindow):
             self.open_project(self.current_project)
         elif self.current_level == "project-menu":
             self.show_home()
+
+    def closeEvent(self, event) -> None:
+        self._flush_current()
+        super().closeEvent(event)
 
     def show_about(self) -> None:
         QMessageBox.information(

@@ -10,7 +10,8 @@ O Java continua funcionando até o Python ter as mesmas telas.
 - **Telas (PySide6):** janela principal com barra de cima/baixo, Home com os círculos dos jobs e "+ New Job", menu do job com os
   19 círculos, a Lista (All Jobs), **Ordered (auto)** e **Audit Log** (com Export CSV), **Dashboard** (totais, barras por seção, bloco de título e Export all), **Received** (entregas + barras entregue x pedido), **Suppliers & Tax** e **Materials DB** (tabelas editáveis, salvam na hora) e a navegação de volta. As demais telas mostram um aviso "ainda não foi portada".
 - **Config:** renomear sigla/nome (salva ao digitar), abrir o job e remover. Remover APAGA tudo do job (itens, preços, fornecedores, entregas, auditoria) e só libera depois de digitar a sigla.
-- **Falta:** as 13 seções de takeoff.
+- **Seções de takeoff (as 13):** uma tela genérica com linhas editáveis; MATERIAL só lista os materiais da SPECIES da linha; QTY, preço e total calculados na hora; Status gira ao clicar; filtro de linhas; Export CSV; o Audit Log compara 1,4 s depois de cada edição.
+- **Falta:** nada do app Java sem equivalente em Python. Próximos passos: empacotar (instalador) e sincronização da equipe.
 
 ## Estrutura
 
@@ -21,11 +22,12 @@ O Java continua funcionando até o Python ter as mesmas telas.
 | `nlc/db.py`, `nlc/schema.sql` | Banco SQLite. Por padrão o mesmo arquivo do Java: `~/NextLevelConstruction/material_list.db` (ou a variável `NLC_DB`) |
 | `nlc/dao.py` | Leitura e gravação de cada tabela |
 | `nlc/audit.py` | Linha de base e comparação do Audit Log |
+| `nlc/takeoff.py` | Regras das seções de takeoff sem Qt (ciclo de status, filtro, números com vírgula, CSV da seção) |
 | `nlc/inputs.py` | Leitura de números digitados nas células (campo vazio = 0, texto inválido é recusado) |
 | `nlc/reports.py` | Linhas das tabelas, totais do Dashboard e texto dos CSV (iguais aos do web: linhas separadas por CRLF, arquivo salvo com BOM) |
 | `nlc/formatting.py` | Formatação de datas igual à do web ("Oct 16, 2026") |
 | `nlc/tiles.py` | Os 19 círculos do menu do job e as abreviações |
-| `nlc/ui/` | Telas em PySide6 (tema, círculos, Home, Lista, menu do job, Dashboard, Ordered, Audit Log, Received, Suppliers, Materials DB, Config, janela principal) |
+| `nlc/ui/` | Telas em PySide6 (tema, círculos, Home, Lista, menu do job, Dashboard, seções de takeoff, Ordered, Audit Log, Received, Suppliers, Materials DB, Config, janela principal) |
 | `tests/` | Testes (`unittest`, sem instalar nada) |
 
 ## Como rodar

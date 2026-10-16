@@ -145,10 +145,13 @@ java "-Duser.home=$env:TEMP\nlc-home" -cp "$env:TEMP\nlc-smoke;bin;resources;lib
 7. Tests: grow `test/SmokeCheck.java` into one case per QTY rule, using values computed by the workbook itself.
 8. **Python migration** (`NextLevelConstructionPy/`): core DONE (calc, seed, db, DAOs, audit; 22 `unittest` tests incl. a Java-vs-Python parity run over
    ~45k inputs: `python -I -m unittest discover -s tests -t .`). UI library chosen: PySide6 (venv in `NextLevelConstructionPy/.venv`, `python -m nlc` runs it; UI tests need
-   `QT_QPA_PLATFORM=offscreen`, 82 tests). DONE: main window, Home, Lista, project menu (19 circles), navigation, Ordered (auto), Audit Log (shared `ReportPanel`, `nlc/reports.py`
-   for rows and CSV), Dashboard (KPIs, section bars, title block, Export all), Received, Config (rename; remove = hard delete after typing the abbr), Suppliers & Tax and Materials DB (shared `EditableTablePanel`: cells save at once, text in a number cell is rejected, blank = 0). CSV files match the web: CRLF rows, BOM on save. Next: port the remaining screens ( then the 13 take-off sections, which must call
-   `audit.run_diff` 1.4 s after each edit like the Java `TakeoffTableModel`; Config last). Original order list: (Dashboard, sections, Ordered, Received, Audit, Materials DB, Suppliers, Config). Screenshots are NOT wanted by the user. The Config screen is still undone in
-   Java too: rename abbr/name, remove job = hard delete after typing the abbr, no "Export all jobs".
+   `QT_QPA_PLATFORM=offscreen`, 104 tests). DONE: main window, Home, Lista, project menu (19 circles), navigation, Ordered (auto), Audit Log (shared `ReportPanel`, `nlc/reports.py`
+   for rows and CSV), Dashboard (KPIs, section bars, title block, Export all), Received, Config (rename; remove = hard delete after typing the abbr), Suppliers & Tax and Materials DB (shared `EditableTablePanel`: cells save at once, text in a number cell is rejected, blank = 0). CSV files match the web: CRLF rows, BOM on save. ALL screens are ported, including the 13 take-off sections (`nlc/ui/takeoff.py`: dependent MATERIAL drop-down, status pill, row filter by hiding rows,
+   per-edit audit comparison after 1.4 s, flushed before leaving the screen or re-opening a job). Not ported on purpose: nothing from Java. Next: packaging
+   (PyInstaller) and team sync (item 1). Pitfalls hit: `QSortFilterProxyModel` with a Python `filterAcceptsRow` crashed Qt 6.12 (use `setRowHidden`);
+   the offscreen Qt platform draws no text on Windows; the Bash tool eats backslashes in heredocs (use the Edit tool for `
+` literals).
+   Latent edge in the Java app (not fixed): opening a job re-takes the audit baseline, so a take-off edit made less than 1.4 s before re-opening it can lose its ADDED entry.
 9. **Invalid LENGTH text differs across the three implementations** (found by the parity test): Java `Double.parseDouble` accepts `12d`, `5f`, `NaN`,
    `Infinity`; web `parseFloat` reads a prefix (`5f`→5, `Infinity`→Infinity, `1_0`→1); Excel `VALUE()` and the Python port reject them. Needs a decision
    (suggested: make Java and web strict like Python). Nothing changed yet.
