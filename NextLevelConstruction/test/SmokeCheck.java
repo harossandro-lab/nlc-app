@@ -184,6 +184,44 @@ public class SmokeCheck {
         check("received dao: update persists", rdao.findByProject(rproj.id).get(1).payment + "|" + rdao.findByProject(rproj.id).get(1).date, "Paid|2026-10-16");
         rdao.delete(saved2.get(0).id);
         check("received dao: delete", rdao.findByProject(rproj.id).size(), 1);
+        // Audit log: diff of ItemKey totals (pure logic)
+        Map<String, Integer> auditPrev = new LinkedHashMap<>();
+        auditPrev.put("a", 5); auditPrev.put("b", 2); auditPrev.put("gone", 7);
+        Map<String, Integer> auditNow = new LinkedHashMap<>();
+        auditNow.put("a", 5); auditNow.put("b", 3); auditNow.put("new", 4);
+        List<CalcEngine.AuditChange> adiff = CalcEngine.auditDiff(auditPrev, auditNow);
+        check("audit diff: unchanged key makes no entry, 3 entries in total", adiff.size(), 3);
+        check("audit diff: CHANGED b 2 -> 3", adiff.get(0).action + ":" + adiff.get(0).itemKey + ":" + adiff.get(0).oldQty + ":" + adiff.get(0).newQty, "CHANGED:b:2:3");
+        check("audit diff: ADDED new (old qty null)", adiff.get(1).action + ":" + adiff.get(1).itemKey + ":" + adiff.get(1).oldQty + ":" + adiff.get(1).newQty, "ADDED:new:null:4");
+        check("audit diff: REMOVED goes last with new qty 0", adiff.get(2).action + ":" + adiff.get(2).itemKey + ":" + adiff.get(2).oldQty + ":" + adiff.get(2).newQty, "REMOVED:gone:7:0");
+        check("audit totals: same ItemKey summed, no-QTY and no-key lines skipped", CalcEngine.totalsByItemKey(Arrays.asList(o1, o2, o3, o4, o5)).toString(), "{2x4|12'|df.no2=5, hanger|hangers_clips=4}");
+        // Audit log: service + DAO against the database
+        com.nlc.materiallist.model.Project aproj = new com.nlc.materiallist.dao.ProjectDao().create("AUD", "Audit smoke");
+        com.nlc.materiallist.dao.TakeoffItemDao aitems = new com.nlc.materiallist.dao.TakeoffItemDao();
+        com.nlc.materiallist.dao.AuditDao adao = new com.nlc.materiallist.dao.AuditDao();
+        TakeoffItem ai = it("Stud", "12'", 24.0, null, "", null);
+        ai.projectId = aproj.id; ai.sectionId = "roof"; ai.material = "2X4"; ai.species = "DF.No2"; aitems.insert(ai);   // qty 2
+        com.nlc.materiallist.service.AuditService.ensureBaseline(aproj.id);
+        check("audit service: baseline creates no log entries", adao.countLog(aproj.id), 0);
+        check("audit service: baseline stores the snapshot", adao.getSnapshot(aproj.id).toString(), "{2x4|12'|df.no2=2}");
+        check("audit service: nothing changed -> no entries", com.nlc.materiallist.service.AuditService.runDiff(aproj.id), 0);
+        ai.lf = 36.0; aitems.update(ai);                                                                                  // qty 3
+        TakeoffItem ai2 = it("Hanger", "", null, null, "", 4.0);
+        ai2.projectId = aproj.id; ai2.sectionId = "roof"; ai2.material = "HANGER"; ai2.species = "HANGERS_CLIPS"; aitems.insert(ai2);
+        check("audit service: edit + new line -> 2 entries", com.nlc.materiallist.service.AuditService.runDiff(aproj.id), 2);
+        List<com.nlc.materiallist.dao.AuditDao.Entry> alog = adao.findLog(aproj.id);
+        check("audit log: first change is on top (CHANGED 2 -> 3)", alog.get(0).action + ":" + alog.get(0).oldQty + ":" + alog.get(0).newQty, "CHANGED:2:3");
+        check("audit log: ADDED has null old qty", alog.get(1).action + ":" + alog.get(1).oldQty, "ADDED:null");
+        aitems.delete(ai2.id);
+        com.nlc.materiallist.service.AuditService.runDiff(aproj.id);
+        check("audit log: removed line is logged (newest on top)", adao.findLog(aproj.id).get(0).action + ":" + adao.findLog(aproj.id).get(0).newQty, "REMOVED:0");
+        check("audit service: baseline is skipped once there is a log", com.nlc.materiallist.service.AuditService.runDiff(aproj.id), 0);
+        // the log keeps only the last 400 entries
+        List<CalcEngine.AuditChange> many = new ArrayList<>();
+        for (int i = 0; i < 450; i++) many.add(new CalcEngine.AuditChange("ADDED", "k" + i, null, 1));
+        adao.saveRun(aproj.id, "2026-10-16T00:00:00Z", many, new LinkedHashMap<>());
+        check("audit log: trimmed to the last 400 entries", adao.countLog(aproj.id), 400);
+        check("audit log: newest kept (k0 on top)", adao.findLog(aproj.id).get(0).itemKey, "k0");
         Path dbFile = Paths.get(System.getProperty("user.home"), "NextLevelConstruction", "material_list.db");
         check("db file created under user.home", Files.exists(dbFile), true);
         System.out.println("RESULT pass=" + pass + " fail=" + fail);

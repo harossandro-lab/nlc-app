@@ -72,6 +72,26 @@ CREATE TABLE IF NOT EXISTS received_log (
     payment     TEXT DEFAULT ''
 );
 
+-- Audit log of quantity changes per ItemKey (like PRICE_AUDIT). Newest rows have the highest id.
+CREATE TABLE IF NOT EXISTS audit_log (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id  TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    ts          TEXT NOT NULL,
+    action      TEXT NOT NULL,
+    item_key    TEXT NOT NULL,
+    old_qty     INTEGER,
+    new_qty     INTEGER NOT NULL
+);
+
+-- Last known total QTY per ItemKey: the "before" side of the next comparison.
+CREATE TABLE IF NOT EXISTS audit_snapshot (
+    project_id  TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    item_key    TEXT NOT NULL,
+    qty         INTEGER NOT NULL,
+    PRIMARY KEY (project_id, item_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_project ON audit_log(project_id);
 CREATE INDEX IF NOT EXISTS idx_received_project ON received_log(project_id);
 CREATE INDEX IF NOT EXISTS idx_items_project_section ON takeoff_items(project_id, section_id);
 CREATE INDEX IF NOT EXISTS idx_materials_project ON materials_db(project_id);

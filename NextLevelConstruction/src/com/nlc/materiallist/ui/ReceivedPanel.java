@@ -27,6 +27,7 @@ import javax.swing.table.AbstractTableModel;
 
 import com.nlc.materiallist.calc.CalcEngine;
 import com.nlc.materiallist.calc.CalcEngine.OrderedLine;
+import com.nlc.materiallist.calc.SectionOrder;
 import com.nlc.materiallist.dao.MaterialDbDao;
 import com.nlc.materiallist.dao.ReceivedDao;
 import com.nlc.materiallist.dao.SupplierDao;
@@ -66,7 +67,7 @@ public class ReceivedPanel extends JPanel {
         database = new MaterialDbDao().findByProject(project.id);
         suppliers = new SupplierDao().findByProject(project.id);
         ordered = CalcEngine.aggregateByGroup(
-                OrderedPanel.sortedBySection(new TakeoffItemDao().findByProject(project.id)), database, suppliers);
+                SectionOrder.sort(new TakeoffItemDao().findByProject(project.id)), database, suppliers);
         rows = dao.findByProject(project.id);
 
         JLabel heading = new JLabel("Received");

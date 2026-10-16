@@ -237,6 +237,47 @@ public final class CalcEngine {
     }
 
     // ---------------------------------------------------------------
+    // Audit log — diff of ItemKey totals before/after an edit (same rules as the web app's runAuditDiff)
+    // ---------------------------------------------------------------
+
+    /** One entry of the audit log: ADDED, CHANGED or REMOVED. oldQty is null for ADDED. */
+    public static final class AuditChange {
+        public final String action, itemKey;
+        public final Integer oldQty;
+        public final int newQty;
+        public AuditChange(String action, String itemKey, Integer oldQty, int newQty) {
+            this.action = action; this.itemKey = itemKey; this.oldQty = oldQty; this.newQty = newQty;
+        }
+    }
+
+    /** Total QTY per lower-case ItemKey across all sections; lines without ItemKey or QTY do not count. */
+    public static Map<String, Integer> totalsByItemKey(List<TakeoffItem> items) {
+        Map<String, Integer> map = new LinkedHashMap<>();
+        for (TakeoffItem it : items) {
+            String k = itemKeyOf(it);
+            if (k.isEmpty()) continue;
+            Integer qty = computeQty(it);
+            if (qty == null || qty == 0) continue;
+            map.merge(k, qty, Integer::sum);
+        }
+        return map;
+    }
+
+    /** ADDED / CHANGED (in the order of `current`) followed by REMOVED (in the order of `prev`). */
+    public static List<AuditChange> auditDiff(Map<String, Integer> prev, Map<String, Integer> current) {
+        List<AuditChange> diffs = new ArrayList<>();
+        for (Map.Entry<String, Integer> e : current.entrySet()) {
+            Integer before = prev.get(e.getKey());
+            if (before == null) diffs.add(new AuditChange("ADDED", e.getKey(), null, e.getValue()));
+            else if (!before.equals(e.getValue())) diffs.add(new AuditChange("CHANGED", e.getKey(), before, e.getValue()));
+        }
+        for (Map.Entry<String, Integer> e : prev.entrySet()) {
+            if (!current.containsKey(e.getKey())) diffs.add(new AuditChange("REMOVED", e.getKey(), e.getValue(), 0));
+        }
+        return diffs;
+    }
+
+    // ---------------------------------------------------------------
     // Received — delivery log, compared with Ordered by GROUP (same rules as the web app's Received tab)
     // ---------------------------------------------------------------
 

@@ -27,6 +27,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 
 import com.nlc.materiallist.calc.CalcEngine;
 import com.nlc.materiallist.calc.CalcEngine.OrderedLine;
+import com.nlc.materiallist.calc.SectionOrder;
 import com.nlc.materiallist.dao.MaterialDbDao;
 import com.nlc.materiallist.dao.SupplierDao;
 import com.nlc.materiallist.dao.TakeoffItemDao;
@@ -68,7 +69,7 @@ public class OrderedPanel extends JPanel {
         setBorder(new EmptyBorder(22, 26, 26, 26));
 
         byGroup = CalcEngine.aggregateByGroup(
-                sortedBySection(new TakeoffItemDao().findByProject(project.id)),
+                SectionOrder.sort(new TakeoffItemDao().findByProject(project.id)),
                 new MaterialDbDao().findByProject(project.id),
                 new SupplierDao().findByProject(project.id));
         buildRows();
@@ -104,19 +105,6 @@ public class OrderedPanel extends JPanel {
         JScrollPane scroll = new JScrollPane(table);
         scroll.setBorder(BorderFactory.createLineBorder(LINE));
         add(scroll, BorderLayout.CENTER);
-    }
-
-    /** Items in workbook section order (the web app walks the sections in that order). */
-    static List<TakeoffItem> sortedBySection(List<TakeoffItem> items) {
-        List<String> order = new ArrayList<>();
-        for (SeedData.Section s : SeedData.SECTIONS) order.add(s.id);
-        List<TakeoffItem> out = new ArrayList<>(items);
-        out.sort((a, b) -> {
-            int c = Integer.compare(order.indexOf(a.sectionId), order.indexOf(b.sectionId));
-            if (c != 0) return c;
-            return Long.compare(a.id == null ? 0 : a.id, b.id == null ? 0 : b.id);
-        });
-        return out;
     }
 
     private void buildRows() {
