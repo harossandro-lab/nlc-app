@@ -11,6 +11,7 @@ from .. import audit, db
 from ..models import Project
 from ..tiles import TILES
 from .audit_log import AuditPanel
+from .dashboard import DashboardPanel
 from .home import HomePanel
 from .materials_db import MaterialsDbPanel
 from .ordered import OrderedPanel
@@ -146,6 +147,8 @@ class MainWindow(QMainWindow):
     def _build_screen(self, tile_id: str) -> QWidget:
         """The screen behind a circle; the ones not ported yet show a placeholder."""
         project = self.current_project
+        if tile_id == "dashboard":
+            return DashboardPanel(self.conn, project)
         if tile_id == "ordered":
             return OrderedPanel(self.conn, project)
         if tile_id == "audit":

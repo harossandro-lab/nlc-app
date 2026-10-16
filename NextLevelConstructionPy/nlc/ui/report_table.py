@@ -59,12 +59,12 @@ class ReportModel(QAbstractTableModel):
 
 
 def save_csv(parent: QWidget, suggested_name: str, text: str) -> bool:
-    """Asks where to save and writes the file as UTF-8. Returns False when cancelled or the write failed."""
+    """Asks where to save and writes the file as UTF-8 with a BOM. Returns False when cancelled or the write failed."""
     path, _ = QFileDialog.getSaveFileName(parent, "Export CSV", suggested_name, "CSV (*.csv)")
     if not path:
         return False
     try:
-        with open(path, "w", encoding="utf-8", newline="") as f:
+        with open(path, "w", encoding="utf-8-sig", newline="") as f:      # BOM, like the web download (Excel reads accents)
             f.write(text)
     except OSError as e:
         QMessageBox.critical(parent, "Export CSV", f"Não consegui salvar o arquivo: {e}")

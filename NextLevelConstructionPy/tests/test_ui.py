@@ -131,7 +131,7 @@ class MainWindowTests(unittest.TestCase):
         self.assertEqual(panel.table.columnSpan(0, 0), 6)           # group header runs across the row
         self.assertEqual(panel.table.columnSpan(2, 0), 5)           # subtotal label runs up to the total column
         self.assertIsNone(panel.empty_label)
-        self.assertEqual(panel.csv_text().split("\n")[1], "1ST FLOOR - WALL,2X4,12',DF.No2,5,FACTORY,10.00,50.00")
+        self.assertEqual(panel.csv_text().split("\r\n")[1], "1ST FLOOR - WALL,2X4,12',DF.No2,5,FACTORY,10.00,50.00")
 
     def test_ordered_screen_without_items_shows_the_hint(self):
         self.win.open_project(self.avn)
@@ -164,8 +164,9 @@ class MainWindowTests(unittest.TestCase):
         target = Path(self.tmp.name) / "out.csv"
         with mock.patch("nlc.ui.report_table.QFileDialog.getSaveFileName", return_value=(str(target), "CSV (*.csv)")):
             self.assertTrue(panel.export_csv())
-        self.assertEqual(target.read_text(encoding="utf-8"), panel.csv_text())
-        self.assertTrue(target.read_text(encoding="utf-8").startswith("Group,Material,Length,Species,Qty,"))
+        self.assertEqual(target.read_bytes().decode("utf-8-sig"), panel.csv_text())    # raw bytes: CRLF must stay CRLF
+        self.assertEqual(target.read_bytes()[:3], bytes([0xEF, 0xBB, 0xBF]))      # BOM, like the web download
+        self.assertTrue(target.read_bytes().decode("utf-8-sig").startswith("Group,Material,Length,Species,Qty,"))
         other = Path(self.tmp.name) / "none.csv"
         with mock.patch("nlc.ui.report_table.QFileDialog.getSaveFileName", return_value=("", "")):
             self.assertFalse(panel.export_csv())
@@ -315,6 +316,56 @@ class MainWindowTests(unittest.TestCase):
         self.assertEqual((panel.summary.bars[0].delivered, round(panel.summary.bars[0].percent)), (20.0, 40))
         panel.remove_row(0)
         self.assertEqual(panel.summary.bars[0].delivered, 0.0)
+
+    # ---- Dashboard ----
+    def _seed_dashboard(self):
+        from nlc.dao import MaterialDbDao
+        from nlc.models import MaterialDbEntry
+        MaterialDbDao(self.conn).insert(MaterialDbEntry(project_id=self.avn.id, material="2X4", length="12'",
+                                                        species="DF.No2", unit_price_out_tax=10.0, supply="FACTORY"))
+        tdao = TakeoffItemDao(self.conn)
+        for lf, status in ((24.0, "pending"), (24.0, "ordered"), (24.0, "received"), (24.0, "received")):
+            it = self._add_stud(lf)
+            it.status = status
+            tdao.update(it)                                        # 4 lines x 2 pieces x $10.00
+
+    def test_dashboard_numbers(self):
+        self._seed_dashboard()
+        panel = self._open("dashboard")
+        self.assertEqual(panel.kpis["items"].value_label.text(), "4")
+        self.assertEqual(panel.kpis["total"].value_label.text(), "$80.00")
+        self.assertEqual(panel.kpis["ordered"].value_label.text(), "$20.00")
+        self.assertEqual(panel.kpis["received"].value_label.text(), "$40.00")
+        self.assertEqual([(sid, t.count) for sid, t in panel.section_rows if t.count], [("1st-walls", 4)])
+        self.assertEqual(len(panel.section_rows), 13)
+
+    def test_dashboard_with_no_items_shows_zeros(self):
+        panel = self._open("dashboard")
+        self.assertEqual((panel.kpis["items"].value_label.text(), panel.kpis["total"].value_label.text()), ("0", "$0.00"))
+
+    def test_dashboard_title_block_is_saved_on_edit(self):
+        from nlc.dao import ProjectDao
+        panel = self._open("dashboard")
+        self.assertEqual(panel.fields["name"].text(), "AVENEL")                  # created with the job
+        panel.fields["jobsite"].textEdited.emit("12 Main St")
+        panel.fields["total_sf"].textEdited.emit("48,000")
+        info = ProjectDao(self.conn).get_info(self.avn.id)
+        self.assertEqual((info.jobsite, info.total_sf, info.name), ("12 Main St", "48,000", "AVENEL"))
+        self.win.go_back_one_level()
+        self.win.open_tile("dashboard")
+        self.assertEqual(self.win.stack.currentWidget().fields["jobsite"].text(), "12 Main St")
+
+    def test_dashboard_export_all(self):
+        from unittest import mock
+        self._seed_dashboard()
+        panel = self._open("dashboard")
+        target = Path(self.tmp.name) / "all.csv"
+        with mock.patch("nlc.ui.report_table.QFileDialog.getSaveFileName", return_value=(str(target), "CSV (*.csv)")):
+            self.assertTrue(panel.export_all())
+        text = target.read_bytes().decode("utf-8-sig")
+        self.assertEqual(len(text.split("\r\n")), 5)                              # header + 4 lines
+        self.assertTrue(text.startswith("Section,Group,Purpose,"))
+        self.assertIn("1st Floor Walls,1ST FLOOR - WALL,Stud,,2X4,12'", text)
 
     def test_circle_click_emits(self):
         from PySide6.QtCore import QPoint, Qt

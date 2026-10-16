@@ -2,11 +2,12 @@
 
 The CSV files are exactly what the web app exports (same header, same row order, same number rounding)."""
 from dataclasses import dataclass, field
+import math
 from typing import Dict, Iterable, List
 
 from . import calc
 from .calc import OrderedLine
-from .formatting import DASH, format_timestamp
+from .formatting import DASH, format_timestamp, number_text
 
 ORDERED_COLUMNS = ["Group", "Material · Length · Species", "Qty", "Supply", "Unit $", "Total"]
 AUDIT_COLUMNS = ["Timestamp", "Action", "ItemKey", "Old Qty", "New Qty"]
@@ -55,20 +56,22 @@ def _csv_cell(v) -> str:
     return v
 
 
-def _csv_row(cells) -> str:
-    return ",".join(_csv_cell(c) for c in cells) + "\n"
+def to_csv(rows) -> str:
+    """Rows joined with CRLF and no trailing newline, cells quoted when they hold , " or a line break: the web toCSV.
+    (The web download puts a BOM in front; the save dialog does the same.)"""
+    return "\r\n".join(",".join(_csv_cell(c) for c in row) for row in rows)
 
 
 def ordered_csv(by_group: Dict[str, Dict[str, OrderedLine]]) -> str:
     """Groups in first-seen order (like the web export), header Group..Total."""
-    out = _csv_row(["Group", "Material", "Length", "Species", "Qty", "Supply", "Unit Price", "Total"])
+    rows = [["Group", "Material", "Length", "Species", "Qty", "Supply", "Unit Price", "Total"]]
     for g, entries in by_group.items():
         for e in entries.values():
             total = e.total()
-            out += _csv_row([g, e.material, e.length, e.species, e.qty, e.supply or "",
-                             "" if e.unit is None else calc.fixed2(e.unit),
-                             "" if total is None else calc.fixed2(total)])
-    return out
+            rows.append([g, e.material, e.length, e.species, e.qty, e.supply or "",
+                         "" if e.unit is None else calc.fixed2(e.unit),
+                         "" if total is None else calc.fixed2(total)])
+    return to_csv(rows)
 
 
 @dataclass
@@ -93,7 +96,7 @@ def delivered_vs_ordered(by_group: Dict[str, Dict[str, OrderedLine]], received, 
     return bars
 
 
-_TONE_BY_ACTION ={"ADDED": "good", "REMOVED": "bad", "CHANGED": "warn"}
+_TONE_BY_ACTION = {"ADDED": "good", "REMOVED": "bad", "CHANGED": "warn"}
 
 
 def audit_rows(entries) -> List[ReportRow]:
@@ -105,7 +108,78 @@ def audit_rows(entries) -> List[ReportRow]:
 
 def audit_csv(entries) -> str:
     """Raw ISO timestamps and an empty Old Qty for ADDED, like the web export."""
-    out = _csv_row(["Timestamp", "Action", "ItemKey", "Old Qty", "New Qty"])
+    rows = [["Timestamp", "Action", "ItemKey", "Old Qty", "New Qty"]]
     for e in entries:
-        out += _csv_row([e.ts, e.action, e.item_key, "" if e.old_qty is None else e.old_qty, e.new_qty])
-    return out
+        rows.append([e.ts, e.action, e.item_key, "" if e.old_qty is None else e.old_qty, e.new_qty])
+    return to_csv(rows)
+
+
+# ---------------------------------------------------------------------------
+# Dashboard: totals by status and the "Export all (CSV)" file
+# ---------------------------------------------------------------------------
+@dataclass
+class Totals:
+    total: float = 0.0
+    ordered: float = 0.0
+    received: float = 0.0
+    count: int = 0
+
+
+def totals_of(items, database, suppliers) -> Totals:
+    """Estimated value of the priced lines, and how much of it is ordered / received (the line STATUS)."""
+    t = Totals(count=len(items))
+    for it in items:
+        v = calc.line_total(it, database, suppliers)
+        if v is None:
+            continue
+        t.total += v
+        if it.status == "ordered":
+            t.ordered += v
+        if it.status == "received":
+            t.received += v
+    return t
+
+
+def percent_rounded(part: float, whole: float) -> int:
+    """Math.round(part / whole * 100) as JavaScript does it (halves go up); 0 when there is no total."""
+    return int(math.floor(part / whole * 100 + 0.5)) if whole else 0
+
+
+def section_totals(items, database, suppliers, sections):
+    """[(section dict, Totals)] in workbook order, plus the grand Totals (like the web grandTotals)."""
+    per = []
+    grand = Totals()
+    for sec in sections:
+        t = totals_of([i for i in items if i.section_id == sec["id"]], database, suppliers)
+        per.append((sec, t))
+        grand.total += t.total
+        grand.ordered += t.ordered
+        grand.received += t.received
+        grand.count += t.count
+    return per, grand
+
+
+ALL_ITEMS_HEADER = ["Section", "Group", "Purpose", "Page/Detail", "Material", "Length", "Species", "LF", "SF", "SP", "EA",
+                    "QTY", "Location", "ItemKey", "Unit Price", "Total", "Status"]
+
+
+def item_cells(it, database, suppliers) -> list:
+    """The take-off line as the web exports it (after the Section cell)."""
+    qty = calc.compute_qty(it)
+    total = calc.line_total(it, database, suppliers)
+    db = calc.find_db_entry(it, database)
+    unit = None if db is None else calc.unit_price_of(db, suppliers)
+    return [it.group, it.purpose, it.page_detail, it.material, it.length, it.species,
+            number_text(it.lf), number_text(it.sf), it.sp, number_text(it.ea), "" if qty is None else qty, it.location,
+            calc.build_item_key(it.material, it.length, it.species),
+            "" if unit is None else calc.fixed2(unit), "" if total is None else calc.fixed2(total), it.status or "pending"]
+
+
+def all_items_csv(items, database, suppliers, sections) -> str:
+    """"Export all (CSV)" of the Dashboard: every line of every section, sections in workbook order."""
+    label_of = {s["id"]: s["label"] for s in sections}
+    rows = [ALL_ITEMS_HEADER]
+    for it in items:
+        if it.section_id in label_of:
+            rows.append([label_of[it.section_id]] + item_cells(it, database, suppliers))
+    return to_csv(rows)
