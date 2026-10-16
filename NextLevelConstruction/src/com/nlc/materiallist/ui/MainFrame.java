@@ -125,6 +125,7 @@ public class MainFrame extends JFrame {
         switch (tileId) {
             case "dashboard": screen = new DashboardPanel(currentProject); break;
             case "ordered": screen = new OrderedPanel(currentProject); break;
+            case "received": screen = new ReceivedPanel(currentProject); break;
             case "database": screen = new MaterialsDbPanel(currentProject); break;
             case "suppliers": screen = new SuppliersPanel(currentProject); break;
             default: screen = new SectionPanel(currentProject, tileId); break;

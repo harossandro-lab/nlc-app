@@ -27,6 +27,21 @@ public class SmokeCheck {
         t.purpose = purpose; t.length = length; t.lf = lf; t.sf = sf; t.sp = sp; t.ea = ea;
         return t;
     }
+    static javax.swing.JTable findTable(java.awt.Container c) {
+        for (java.awt.Component k : c.getComponents()) {
+            if (k instanceof javax.swing.JTable) return (javax.swing.JTable) k;
+            if (k instanceof java.awt.Container) {
+                javax.swing.JTable t = findTable((java.awt.Container) k);
+                if (t != null) return t;
+            }
+        }
+        return null;
+    }
+    static com.nlc.materiallist.model.ReceivedEntry entryFor(String projectId) {
+        com.nlc.materiallist.model.ReceivedEntry e = new com.nlc.materiallist.model.ReceivedEntry();
+        e.projectId = projectId; e.group = "ROOF"; e.material = "2X4"; e.length = "12'"; e.species = "DF.No2"; e.qty = 3.0; e.ticket = "T-9";
+        return e;
+    }
     public static void main(String[] args) throws Exception {
         // reference data
         check("GROUPS count", SeedData.GROUPS.size(), 43);
@@ -77,9 +92,9 @@ public class SmokeCheck {
         List<String> wantTiles = new ArrayList<>();
         wantTiles.add("dashboard");
         for (SeedData.Section sec : SeedData.SECTIONS) wantTiles.add(sec.id);
-        wantTiles.add("ordered"); wantTiles.add("database"); wantTiles.add("suppliers");
-        check("menu tiles = dashboard + 13 sections + ordered + db + suppliers", tileIds, wantTiles);
-        check("menu tile count", tileIds.size(), 17);
+        wantTiles.add("ordered"); wantTiles.add("received"); wantTiles.add("database"); wantTiles.add("suppliers");
+        check("menu tiles = dashboard + 13 sections + ordered + received + db + suppliers", tileIds, wantTiles);
+        check("menu tile count", tileIds.size(), 18);
         System.setProperty("java.awt.headless", "true");
         com.nlc.materiallist.model.Project proj = new com.nlc.materiallist.dao.ProjectDao().create("TST", "Smoke");
         new com.nlc.materiallist.ui.ProjectMenuPanel(proj, id -> {});
@@ -94,6 +109,21 @@ public class SmokeCheck {
         saved.projectId = proj.id; saved.sectionId = "roof"; saved.material = "2X4"; saved.species = "DF.No2"; saved.group = "ROOF";
         itemDao.insert(saved);
         check("OrderedPanel builds from the database", new com.nlc.materiallist.ui.OrderedPanel(proj) != null, true);
+        new com.nlc.materiallist.dao.ReceivedDao().insert(entryFor(proj.id));
+        com.nlc.materiallist.ui.ReceivedPanel rp = new com.nlc.materiallist.ui.ReceivedPanel(proj);
+        check("ReceivedPanel builds from the database", rp != null, true);
+        javax.swing.JTable rt = findTable(rp);
+        check("ReceivedPanel shows the saved delivery", rt.getModel().getValueAt(0, 8), "T-9");
+        rt.getModel().setValueAt("5", 0, 7);
+        rt.getModel().setValueAt("not-a-date", 0, 3);
+        rt.getModel().setValueAt("2026-10-16", 0, 3);
+        rt.getModel().setValueAt("12abc", 0, 7);
+        com.nlc.materiallist.model.ReceivedEntry back = new com.nlc.materiallist.dao.ReceivedDao().findByProject(proj.id).get(0);
+        check("ReceivedPanel edit: qty saved, bad qty ignored", back.qty, 5.0);
+        check("ReceivedPanel edit: valid date saved, bad date ignored", back.date, "2026-10-16");
+        rt.getModel().setValueAt("", 0, 7);
+        check("ReceivedPanel edit: blank qty clears it", new com.nlc.materiallist.dao.ReceivedDao().findByProject(proj.id).get(0).qty, null);
+        check("ReceivedPanel total is a dash when the key has no price", rt.getModel().getValueAt(0, 11), "—");
         // Ordered (auto): sum of QTY by GROUP -> ItemKey
         String g1 = "1ST FLOOR - WALL";
         TakeoffItem o1 = it("Stud", "12'", 24.0, null, "", null); o1.material = "2X4"; o1.species = "DF.No2"; o1.group = g1;  // 24/12 = 2

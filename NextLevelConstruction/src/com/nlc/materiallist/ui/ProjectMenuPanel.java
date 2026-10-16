@@ -21,8 +21,8 @@ import com.nlc.materiallist.model.Project;
 /**
  * Second-level circle screen shown after opening a project — one tile per screen,
  * in spreadsheet order: Dashboard, the 13 take-off sections (taken from
- * SeedData.SECTIONS, which is already in workbook order), Ordered (auto), then Materials DB
- * and Suppliers & Tax. Received and Audit Log are not ported yet.
+ * SeedData.SECTIONS, which is already in workbook order), Ordered (auto), Received, then
+ * Materials DB and Suppliers & Tax. Audit Log is not ported yet.
  * SectionPanel is generic — it works for any sectionId in SeedData.SECTIONS.
  */
 public class ProjectMenuPanel extends JPanel {
@@ -33,6 +33,7 @@ public class ProjectMenuPanel extends JPanel {
         TILES.put("dashboard", "Dashboard");
         for (SeedData.Section s : SeedData.SECTIONS) TILES.put(s.id, s.label);
         TILES.put("ordered", "Ordered (auto)");
+        TILES.put("received", "Received");
         TILES.put("database", "Materials DB");
         TILES.put("suppliers", "Suppliers & Tax");
 
@@ -52,6 +53,7 @@ public class ProjectMenuPanel extends JPanel {
         ABBREVIATIONS.put("Balcony", "BAL");
         ABBREVIATIONS.put("Windows & Doors", "WIN");
         ABBREVIATIONS.put("Ordered (auto)", "ORD");
+        ABBREVIATIONS.put("Received", "RCV");
         ABBREVIATIONS.put("Materials DB", "DB");
         ABBREVIATIONS.put("Suppliers & Tax", "TAX");
     }

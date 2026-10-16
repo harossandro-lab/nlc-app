@@ -2,7 +2,7 @@
 
 Replaces Next Level Construction's Excel/VBA material-takeoff workbooks with an app the whole team can use.
 The user (Sandro) is a construction professional and writes in Brazilian Portuguese.
-Last verified 2026-10-16: Java build + `test/SmokeCheck.java` (61/61) on JDK 21 (Linux) and JDK 25 (Windows 11, PowerShell block below); web app exercised in headless Chromium.
+Last verified 2026-10-16: Java build + `test/SmokeCheck.java` (67/67) on JDK 21 (Linux) and JDK 25 (Windows 11, PowerShell block below); web app exercised in headless Chromium.
 
 ## Working agreements
 - Talk to the user in Brazilian Portuguese (pt-BR), in plain language. Code, identifiers, comments and commit messages stay in English.
@@ -90,7 +90,7 @@ QTY of a take-off line — first matching rule wins, then waste and rounding:
   `dao/*`, `model/*`, `ui/*`.
 - Data: one SQLite file for all jobs at `~/NextLevelConstruction/material_list.db`; tables `projects`, `project_info`, `suppliers`,
   `materials_db`, `takeoff_items`, `received_log`, all keyed by `project_id` (ON DELETE CASCADE); schema in `resources/schema.sql`, read from the classpath.
-- UI: `MainFrame` (CardLayout) → `HomePanel` → `ProjectMenuPanel` (circles) → `DashboardPanel` / `OrderedPanel` / generic `SectionPanel`
+- UI: `MainFrame` (CardLayout) → `HomePanel` → `ProjectMenuPanel` (circles) → `DashboardPanel` / `OrderedPanel` / `ReceivedPanel` / generic `SectionPanel`
   (JTable + `TakeoffTableModel`) / `MaterialsDbPanel` / `SuppliersPanel`. `MaterialCellEditor` rebuilds the MATERIAL combo from the
   row's SPECIES every time the cell is edited. Every edit is written to SQLite immediately (no save button).
 - Local only — no sync between people. Pin `lib/sqlite-jdbc-3.36.0.3.jar` (3.46.x needs slf4j and fails with NoClassDefFoundError).
@@ -100,7 +100,7 @@ QTY of a take-off line — first matching rule wins, then waste and rounding:
 mkdir -p bin
 javac --release 17 -encoding UTF-8 -cp lib/sqlite-jdbc-3.36.0.3.jar -d bin $(find src -name "*.java")
 java -cp "bin:resources:lib/sqlite-jdbc-3.36.0.3.jar" com.nlc.materiallist.Main     # GUI, needs a display
-# logic check without GUI; a throwaway user.home keeps the real database untouched. Expect: RESULT pass=61 fail=0
+# logic check without GUI; a throwaway user.home keeps the real database untouched. Expect: RESULT pass=67 fail=0
 javac --release 17 -cp "bin:lib/sqlite-jdbc-3.36.0.3.jar" -d /tmp/nlc-smoke test/SmokeCheck.java
 java -Duser.home=/tmp/nlc-home -cp "/tmp/nlc-smoke:bin:resources:lib/sqlite-jdbc-3.36.0.3.jar" SmokeCheck
 ```
@@ -135,7 +135,7 @@ java "-Duser.home=$env:TEMP\nlc-home" -cp "$env:TEMP\nlc-smoke;bin;resources;lib
    it too), with an offline queue built by us; keep data per row/section instead of the single `items-all` key to avoid edit conflicts.
 3. ~~Fix the SPACING seed (`8'` missing)~~ — DONE (web `SEED` and `SeedData.SPACINGS`, workbook order, SmokeCheck covers it).
 4. Java: ~~add the 12 missing section tiles~~ — DONE (`ProjectMenuPanel.TILES` is built from `SeedData.SECTIONS`; SmokeCheck builds every `SectionPanel`).
-   Ordered (auto) is DONE (`CalcEngine.aggregateByGroup`, `OrderedPanel`, tile ORD; money/CSV rounding follows JS `toFixed` via `CalcEngine.fixed2`). Still to do: port Received and Audit Log from the web app (then add their tiles); add a Config screen and a real "Lista" (the bottom nav reuses Home).
+   Ordered (auto) is DONE (`CalcEngine.aggregateByGroup`, `OrderedPanel`, tile ORD; money/CSV rounding follows JS `toFixed` via `CalcEngine.fixed2`). Received is DONE (`received_log` table, `ReceivedDao`, `ReceivedPanel`, tile RCV, delivered-vs-ordered bars; date must be yyyy-MM-dd). Still to do: port Audit Log from the web app (then add its tile); add a Config screen and a real "Lista" (the bottom nav reuses Home).
 5. Data: neither app has the real price list or suppliers yet (web seed: one example material `2X4|12'|DF.No2`, suppliers FACTORY/FIELD
    at 0% tax). Import them from the workbook (DATABASE / PRICE) and, if the user wants, the existing AVENEL take-off lines.
 6. Cleanup: dead `SectionPanel.refresh()`; duplicated FEET matcher lines in `CalcEngine.parseSpacingAndPly`; unchecked warning in
