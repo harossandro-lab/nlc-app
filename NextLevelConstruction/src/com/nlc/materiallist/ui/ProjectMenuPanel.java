@@ -12,28 +12,46 @@ import java.util.function.Consumer;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 
+import com.nlc.materiallist.data.SeedData;
 import com.nlc.materiallist.model.Project;
 
 /**
  * Second-level circle screen shown after opening a project — one tile per screen,
- * in spreadsheet order. This starter wires up Dashboard + Sub-Floor (the requested
- * example section) plus Materials DB / Suppliers, which the calculations need.
- * Add more tiles here the same way to bring in the other 12 take-off sections later
- * (SectionPanel is generic — it already works for any sectionId in SeedData.SECTIONS).
+ * in spreadsheet order: Dashboard, the 13 take-off sections (taken from
+ * SeedData.SECTIONS, which is already in workbook order), then Materials DB and
+ * Suppliers & Tax. Ordered (auto), Received and Audit Log are not ported yet.
+ * SectionPanel is generic — it works for any sectionId in SeedData.SECTIONS.
  */
 public class ProjectMenuPanel extends JPanel {
 
     public static final Map<String, String> TILES = new LinkedHashMap<>();
+    private static final Map<String, String> ABBREVIATIONS = new LinkedHashMap<>();
     static {
         TILES.put("dashboard", "Dashboard");
-        TILES.put("sub-floor", "Sub-Floor");
+        for (SeedData.Section s : SeedData.SECTIONS) TILES.put(s.id, s.label);
         TILES.put("database", "Materials DB");
         TILES.put("suppliers", "Suppliers & Tax");
-        // To add e.g. 1st-Walls later:
-        //   TILES.put("1st-walls", "1st Floor Walls");
-        // SectionPanel already understands any sectionId present in SeedData.SECTIONS.
+
+        // Same circle labels as the web app (TAB_CIRCLES).
+        ABBREVIATIONS.put("Dashboard", "DASH");
+        ABBREVIATIONS.put("Sub-Floor", "SF");
+        ABBREVIATIONS.put("1st Floor Walls", "1W");
+        ABBREVIATIONS.put("2nd Floor Walls", "2W");
+        ABBREVIATIONS.put("3rd Floor Walls", "3W");
+        ABBREVIATIONS.put("4th Floor Walls", "4W");
+        ABBREVIATIONS.put("5th Floor Walls", "5W");
+        ABBREVIATIONS.put("6th Floor Walls", "6W");
+        ABBREVIATIONS.put("Roof", "RF");
+        ABBREVIATIONS.put("Flush Beam", "FB");
+        ABBREVIATIONS.put("Shaft Wall", "SW");
+        ABBREVIATIONS.put("Stair Tower", "ST");
+        ABBREVIATIONS.put("Balcony", "BAL");
+        ABBREVIATIONS.put("Windows & Doors", "WIN");
+        ABBREVIATIONS.put("Materials DB", "DB");
+        ABBREVIATIONS.put("Suppliers & Tax", "TAX");
     }
 
     public ProjectMenuPanel(Project project, Consumer<String> onOpenTile) {
@@ -57,7 +75,10 @@ public class ProjectMenuPanel extends JPanel {
         JPanel gridWrap = new JPanel(new FlowLayout(FlowLayout.LEFT));
         gridWrap.setBackground(Color.WHITE);
         gridWrap.add(grid);
-        add(gridWrap, BorderLayout.CENTER);
+        JScrollPane scroll = new JScrollPane(gridWrap);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.getVerticalScrollBar().setUnitIncrement(24);
+        add(scroll, BorderLayout.CENTER);
     }
 
     private JPanel tileCell(String label, Runnable onClick) {
@@ -76,16 +97,10 @@ public class ProjectMenuPanel extends JPanel {
     }
 
     private String abbreviate(String label) {
-        switch (label) {
-            case "Dashboard": return "DASH";
-            case "Sub-Floor": return "SF";
-            case "Materials DB": return "DB";
-            case "Suppliers & Tax": return "TAX";
-            default:
-                String[] words = label.split(" ");
-                StringBuilder sb = new StringBuilder();
-                for (String w : words) if (!w.isEmpty()) sb.append(Character.toUpperCase(w.charAt(0)));
-                return sb.length() > 0 ? sb.toString() : label;
-        }
+        String abbr = ABBREVIATIONS.get(label);
+        if (abbr != null) return abbr;
+        StringBuilder sb = new StringBuilder();
+        for (String w : label.split(" ")) if (!w.isEmpty()) sb.append(Character.toUpperCase(w.charAt(0)));
+        return sb.length() > 0 ? sb.toString() : label;
     }
 }

@@ -3,7 +3,7 @@
  * and the SQLite schema. No GUI needed.
  *
  * Run it with a throwaway user.home so the real database (~/NextLevelConstruction) is not touched.
- * Expected last line: RESULT pass=31 fail=0   (exact commands are in CLAUDE.md)
+ * Expected last line: RESULT pass=36 fail=0   (exact commands are in CLAUDE.md)
  */
 import com.nlc.materiallist.calc.CalcEngine;
 import com.nlc.materiallist.data.SeedData;
@@ -72,6 +72,23 @@ public class SmokeCheck {
         }
         for (String t : new String[]{"projects", "project_info", "suppliers", "materials_db", "takeoff_items"})
             check("table exists: " + t, tables.contains(t), true);
+        // Project menu: Dashboard + 13 sections (workbook order) + Materials DB + Suppliers & Tax
+        List<String> tileIds = new ArrayList<>(com.nlc.materiallist.ui.ProjectMenuPanel.TILES.keySet());
+        List<String> wantTiles = new ArrayList<>();
+        wantTiles.add("dashboard");
+        for (SeedData.Section sec : SeedData.SECTIONS) wantTiles.add(sec.id);
+        wantTiles.add("database"); wantTiles.add("suppliers");
+        check("menu tiles = dashboard + 13 sections + db + suppliers", tileIds, wantTiles);
+        check("menu tile count", tileIds.size(), 16);
+        System.setProperty("java.awt.headless", "true");
+        com.nlc.materiallist.model.Project proj = new com.nlc.materiallist.dao.ProjectDao().create("TST", "Smoke");
+        new com.nlc.materiallist.ui.ProjectMenuPanel(proj, id -> {});
+        int built = 0;
+        for (SeedData.Section sec : SeedData.SECTIONS) {
+            new com.nlc.materiallist.ui.SectionPanel(proj, sec.id);
+            built++;
+        }
+        check("SectionPanel builds for every section", built, 13);
         Path dbFile = Paths.get(System.getProperty("user.home"), "NextLevelConstruction", "material_list.db");
         check("db file created under user.home", Files.exists(dbFile), true);
         System.out.println("RESULT pass=" + pass + " fail=" + fail);
