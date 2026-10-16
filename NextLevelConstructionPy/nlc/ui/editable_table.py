@@ -118,8 +118,11 @@ class RecordTableModel(QAbstractTableModel):
         return True
 
     def append(self, row) -> None:
-        self.beginInsertRows(QModelIndex(), len(self.rows), len(self.rows))
-        self.rows.append(row)
+        self.insert(len(self.rows), row)
+
+    def insert(self, at: int, row) -> None:
+        self.beginInsertRows(QModelIndex(), at, at)
+        self.rows.insert(at, row)
         self.endInsertRows()
 
     def remove(self, r: int):
@@ -132,13 +135,15 @@ class RecordTableModel(QAbstractTableModel):
 class EditableTablePanel(QWidget):
     def __init__(self, title: str, subtitle: str, add_label: str, columns: List[Column], rows: list,
                  persist: Callable[[Any], None], create_row: Callable[[], Any], delete_row: Callable[[Any], None],
-                 empty_hint: str = "", parent=None):
+                 empty_hint: str = "", new_rows_on_top: bool = False, parent=None):
         super().__init__(parent)
         self.setObjectName("page")
         self._create_row = create_row
         self._delete_row = delete_row
+        self._new_rows_on_top = new_rows_on_top
 
         lay = QVBoxLayout(self)
+        self._layout = lay
         lay.setContentsMargins(26, 22, 26, 26)
         lay.setSpacing(14)
         top = QHBoxLayout()
@@ -189,10 +194,18 @@ class EditableTablePanel(QWidget):
     def _update_empty(self, *args) -> None:
         self.empty_label.setVisible(bool(self.empty_label.text()) and self.model.rowCount() == 0)
 
+    def add_footer(self, widget: QWidget) -> None:
+        """Puts an extra widget (e.g. a summary) under the table."""
+        self._layout.addWidget(widget)
+
     def add_row(self) -> None:
         row = self._create_row()
-        self.model.append(row)
-        self.table.scrollToBottom()
+        if self._new_rows_on_top:
+            self.model.insert(0, row)
+            self.table.scrollToTop()
+        else:
+            self.model.append(row)
+            self.table.scrollToBottom()
 
     def remove_row(self, r: int) -> None:
         if self.table.state() == QTableView.EditingState:

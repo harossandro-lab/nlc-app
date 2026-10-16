@@ -5,7 +5,7 @@ from datetime import timedelta, timezone
 from nlc import calc, reports, seed
 from nlc.dao import AuditEntry
 from nlc.formatting import DASH, format_timestamp
-from nlc.models import MaterialDbEntry, Supplier, TakeoffItem
+from nlc.models import MaterialDbEntry, ReceivedEntry, Supplier, TakeoffItem
 
 G1 = "1ST FLOOR - WALL"
 
@@ -49,6 +49,22 @@ class OrderedRowsTests(unittest.TestCase):
     def test_csv_quotes_commas_and_quotes(self):
         agg = {"G": {"k": calc.OrderedLine('2" x 10\', C CHANNEL', "", "", 1)}}
         self.assertEqual(reports.ordered_csv(agg).split("\n")[1], 'G,"2"" x 10\', C CHANNEL",,,1,,,')
+
+
+class DeliveryBarsTests(unittest.TestCase):
+    def test_bars(self):
+        db = [MaterialDbEntry(material="2X4", length="12'", species="DF.No2", unit_price_out_tax=10.0, supply="ACME")]
+        sup = [Supplier(name="ACME", tax=8.25)]
+        recv = [ReceivedEntry(group=G1, material="2x4", length="12'", species="df.no2", qty=2.0),
+                ReceivedEntry(group="ROOF", material="2X4", length="12'", species="DF.No2", qty=1.0)]
+        bars = reports.delivered_vs_ordered(_agg(), recv, db, sup, seed.GROUPS)
+        self.assertEqual([b.group for b in bars], [G1])                    # "(sem grupo)" has no bar
+        self.assertAlmostEqual(bars[0].ordered, 54.125, places=9)
+        self.assertAlmostEqual(bars[0].delivered, 21.65, places=9)
+        self.assertEqual(round(bars[0].percent), 40)
+
+    def test_no_orders_no_bars(self):
+        self.assertEqual(reports.delivered_vs_ordered({}, [], [], [], seed.GROUPS), [])
 
 
 class AuditRowsTests(unittest.TestCase):

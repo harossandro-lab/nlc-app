@@ -1,6 +1,8 @@
 """Reading what the user types into number cells (no Qt)."""
 import math
-from typing import Optional
+import re
+from datetime import date
+from typing import Optional, Tuple
 
 
 def parse_number(text: str) -> Optional[float]:
@@ -16,6 +18,32 @@ def parse_number(text: str) -> Optional[float]:
     if "_" in s or math.isnan(v) or math.isinf(v):
         return None
     return v
+
+
+_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$", re.ASCII)
+
+
+def parse_date(text: str) -> Optional[str]:
+    """A date typed as yyyy-MM-dd (what the web date input stores). Blank is allowed and means "no date";
+    anything that is not a real calendar date returns None so the edit is ignored."""
+    s = (text or "").strip()
+    if not s:
+        return ""
+    if not _DATE.match(s):
+        return None
+    try:
+        date.fromisoformat(s)
+    except ValueError:
+        return None
+    return s
+
+
+def parse_optional_number(text: str) -> Tuple[bool, Optional[float]]:
+    """(accepted, value) for a number that may stay empty (Received qty): blank gives (True, None)."""
+    if not (text or "").strip():
+        return True, None
+    v = parse_number(text)
+    return (False, None) if v is None else (True, v)
 
 
 def parse_whole_number(text: str) -> Optional[int]:

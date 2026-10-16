@@ -145,8 +145,8 @@ java "-Duser.home=$env:TEMP\nlc-home" -cp "$env:TEMP\nlc-smoke;bin;resources;lib
 7. Tests: grow `test/SmokeCheck.java` into one case per QTY rule, using values computed by the workbook itself.
 8. **Python migration** (`NextLevelConstructionPy/`): core DONE (calc, seed, db, DAOs, audit; 22 `unittest` tests incl. a Java-vs-Python parity run over
    ~45k inputs: `python -I -m unittest discover -s tests -t .`). UI library chosen: PySide6 (venv in `NextLevelConstructionPy/.venv`, `python -m nlc` runs it; UI tests need
-   `QT_QPA_PLATFORM=offscreen`, 62 tests). DONE: main window, Home, Lista, project menu (19 circles), navigation, Ordered (auto), Audit Log (shared `ReportPanel`, `nlc/reports.py`
-   for rows and CSV), Suppliers & Tax and Materials DB (shared `EditableTablePanel`: cells save at once, text in a number cell is rejected, blank = 0). Next: port the remaining screens (Received, Dashboard, then the 13 take-off sections, which must call
+   `QT_QPA_PLATFORM=offscreen`, 70 tests). DONE: main window, Home, Lista, project menu (19 circles), navigation, Ordered (auto), Audit Log (shared `ReportPanel`, `nlc/reports.py`
+   for rows and CSV), Received, Suppliers & Tax and Materials DB (shared `EditableTablePanel`: cells save at once, text in a number cell is rejected, blank = 0). Next: port the remaining screens (Dashboard, then the 13 take-off sections, which must call
    `audit.run_diff` 1.4 s after each edit like the Java `TakeoffTableModel`; Config last). Original order list: (Dashboard, sections, Ordered, Received, Audit, Materials DB, Suppliers, Config). Screenshots are NOT wanted by the user. The Config screen is still undone in
    Java too: rename abbr/name, remove job = hard delete after typing the abbr, no "Export all jobs".
 9. **Invalid LENGTH text differs across the three implementations** (found by the parity test): Java `Double.parseDouble` accepts `12d`, `5f`, `NaN`,

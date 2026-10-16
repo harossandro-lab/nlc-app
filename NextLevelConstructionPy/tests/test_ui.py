@@ -262,6 +262,60 @@ class MainWindowTests(unittest.TestCase):
         self.win.open_tile("database")
         self.assertEqual(self.win.stack.currentWidget().model.index(0, 0).data(), "KEEP")
 
+    # ---- Received ----
+    def test_received_new_delivery_goes_on_top_with_defaults(self):
+        from nlc.dao import ReceivedDao
+        panel = self._open("received")
+        self.assertFalse(panel.empty_label.isHidden())
+        panel.add_row()
+        self._set(panel, 0, 8, "T-1")
+        panel.add_row()                                            # newest on top
+        self._set(panel, 0, 8, "T-2")
+        self.assertEqual([panel.model.index(r, 8).data() for r in range(2)], ["T-2", "T-1"])
+        self.assertEqual(panel.model.index(0, 1).data(), "FACTORY")
+        self.assertTrue(panel.empty_label.isHidden())
+        self.assertEqual([r.ticket for r in ReceivedDao(self.conn).find_by_project(self.avn.id)], ["T-2", "T-1"])
+        self.win.go_back_one_level()
+        self.win.open_tile("received")                              # order survives a reopen
+        self.assertEqual(self.win.stack.currentWidget().model.index(0, 8).data(), "T-2")
+
+    def test_received_qty_date_rules(self):
+        from nlc.dao import ReceivedDao
+        panel = self._open("received")
+        panel.add_row()
+        self.assertTrue(self._set(panel, 0, 7, "5"))
+        self.assertFalse(self._set(panel, 0, 7, "12abc"))           # rejected, old value stays
+        self.assertEqual(panel.model.index(0, 7).data(), "5")
+        self.assertFalse(self._set(panel, 0, 3, "16/10/2026"))      # only yyyy-MM-dd
+        self.assertTrue(self._set(panel, 0, 3, "2026-10-16"))
+        saved = ReceivedDao(self.conn).find_by_project(self.avn.id)[0]
+        self.assertEqual((saved.qty, saved.date), (5.0, "2026-10-16"))
+        self.assertTrue(self._set(panel, 0, 7, ""))                  # blank clears the qty (it is not 0)
+        self.assertIsNone(ReceivedDao(self.conn).find_by_project(self.avn.id)[0].qty)
+        self.assertTrue(self._set(panel, 0, 3, ""))                  # a date may be cleared too
+        self.assertEqual(ReceivedDao(self.conn).find_by_project(self.avn.id)[0].date, "")
+
+    def test_received_total_and_delivered_vs_ordered_summary(self):
+        from nlc.dao import MaterialDbDao
+        from nlc.models import MaterialDbEntry
+        MaterialDbDao(self.conn).insert(MaterialDbEntry(project_id=self.avn.id, material="2X4", length="12'",
+                                                        species="DF.No2", unit_price_out_tax=10.0, supply="FACTORY"))
+        self._add_stud(24.0)
+        self._add_stud(36.0)                                         # ordered: 5 x $10 = $50
+        panel = self._open("received")
+        self.assertEqual([(b.group, b.ordered, b.delivered) for b in panel.summary.bars], [("1ST FLOOR - WALL", 50.0, 0.0)])
+        panel.add_row()
+        self._set(panel, 0, 0, "1ST FLOOR - WALL")
+        self._set(panel, 0, 4, "2x4")
+        self._set(panel, 0, 5, "12'")
+        self._set(panel, 0, 6, "df.no2")
+        self.assertEqual(panel.model.index(0, 11).data(), "$0.00")        # priced line, no qty yet: counts as 0
+        self._set(panel, 0, 7, "2")
+        self.assertEqual(panel.model.index(0, 11).data(), "$20.00")
+        self.assertEqual((panel.summary.bars[0].delivered, round(panel.summary.bars[0].percent)), (20.0, 40))
+        panel.remove_row(0)
+        self.assertEqual(panel.summary.bars[0].delivered, 0.0)
+
     def test_circle_click_emits(self):
         from PySide6.QtCore import QPoint, Qt
         from PySide6.QtTest import QTest

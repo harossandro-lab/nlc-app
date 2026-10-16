@@ -16,6 +16,7 @@ from .materials_db import MaterialsDbPanel
 from .ordered import OrderedPanel
 from .project_list import ProjectListPanel
 from .project_menu import ProjectMenuPanel
+from .received import ReceivedPanel
 from .suppliers import SuppliersPanel
 
 
@@ -149,6 +150,8 @@ class MainWindow(QMainWindow):
             return OrderedPanel(self.conn, project)
         if tile_id == "audit":
             return AuditPanel(self.conn, project)
+        if tile_id == "received":
+            return ReceivedPanel(self.conn, project)
         if tile_id == "database":
             return MaterialsDbPanel(self.conn, project)
         if tile_id == "suppliers":

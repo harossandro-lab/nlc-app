@@ -71,7 +71,29 @@ def ordered_csv(by_group: Dict[str, Dict[str, OrderedLine]]) -> str:
     return out
 
 
-_TONE_BY_ACTION = {"ADDED": "good", "REMOVED": "bad", "CHANGED": "warn"}
+@dataclass
+class DeliveryBar:
+    group: str
+    delivered: float
+    ordered: float
+    percent: float        # delivered / ordered, 0-100 (0 when nothing was ordered)
+
+
+def delivered_vs_ordered(by_group: Dict[str, Dict[str, OrderedLine]], received, database, suppliers,
+                         canonical_groups: Iterable[str]) -> List[DeliveryBar]:
+    """One bar per canonical GROUP that has an order (like the web Received tab; "(sem grupo)" has no bar)."""
+    bars: List[DeliveryBar] = []
+    for g in canonical_groups:
+        lines = by_group.get(g)
+        if lines is None:
+            continue
+        ordered = calc.ordered_total(lines)
+        delivered = calc.delivered_total(g, received, database, suppliers)
+        bars.append(DeliveryBar(g, delivered, ordered, calc.delivered_percent(delivered, ordered)))
+    return bars
+
+
+_TONE_BY_ACTION ={"ADDED": "good", "REMOVED": "bad", "CHANGED": "warn"}
 
 
 def audit_rows(entries) -> List[ReportRow]:
