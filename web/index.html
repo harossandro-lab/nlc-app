@@ -1,0 +1,1186 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#10233B; --blue:#1E4976; --blue-deep:#123055; --blue-pale:#EAF1F8;
+    --paper:#FBFAF7; --line:#C7D2DB; --line-soft:#E3E9EE;
+    --orange:#E2600C; --orange-deep:#B94B08;
+    --green:#2F7A4D; --green-bg:#E7F3EC;
+    --amber:#B9790E; --amber-bg:#FBF0DC;
+    --red:#B23A2E; --red-bg:#FBEAE6;
+    --gray:#5B6B7A; --gray-bg:#F1F3F5;
+    --radius:3px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--paper);}
+  #twapp, #twapp *{font-family:'Inter',system-ui,-apple-system,sans-serif;}
+  #twapp{color:var(--ink);min-height:100vh;background:var(--paper);position:relative;}
+  #twapp .disp{font-family:'Oswald',Arial Narrow,sans-serif;text-transform:uppercase;letter-spacing:.04em;}
+  #twapp .mono{font-family:'IBM Plex Mono',ui-monospace,monospace;}
+
+  #twapp .ruler{height:14px;background:
+    repeating-linear-gradient(90deg, var(--blue-deep) 0 1px, transparent 1px 10px),
+    repeating-linear-gradient(90deg, var(--blue-deep) 0 1.5px, transparent 1.5px 50px);
+    background-size:10px 7px, 50px 14px; background-position:0 bottom, 0 top; background-repeat:repeat-x;
+    border-bottom:1px solid var(--blue-deep); opacity:.55;}
+
+  #twapp .topbar{background:var(--ink); color:#fff; padding:14px 20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;}
+  #twapp .topbar .brand{display:flex; align-items:baseline; gap:10px;}
+  #twapp .topbar .brand .tag{font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:.14em; color:var(--orange); border:1px solid var(--orange); padding:2px 6px; border-radius:2px;}
+  #twapp .topbar .proj-edit{flex:1; min-width:220px; display:flex; flex-wrap:wrap; gap:6px 18px; align-items:center;}
+  #twapp .topbar input.pinfo{background:transparent; border:none; border-bottom:1px dashed rgba(255,255,255,0.35); color:#fff; font-size:13px; padding:3px 2px; min-width:110px;}
+  #twapp .topbar input.pinfo::placeholder{color:rgba(255,255,255,0.45);}
+  #twapp .topbar input.pinfo:focus{outline:none; border-bottom:1px solid var(--orange);}
+  #twapp .topbar .pinfo-label{font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:rgba(255,255,255,0.5); margin-right:-3px;}
+  #twapp .sync{display:flex; align-items:center; gap:6px; font-size:11px; color:rgba(255,255,255,0.7); white-space:nowrap;}
+  #twapp .sync .dot{width:7px;height:7px;border-radius:50%;background:#5BD08A; box-shadow:0 0 0 3px rgba(91,208,138,0.2);}
+  #twapp .sync.saving .dot{background:var(--amber); animation:pulse 1s infinite;}
+  #twapp .sync.sync-error .dot{background:var(--orange); animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+  #twapp .shell{display:flex; align-items:flex-start;}
+  #twapp .sidenav{width:200px; flex:none; background:var(--blue-pale); border-right:1px solid var(--line); min-height:calc(100vh - 62px); padding:10px 0; position:sticky; top:0; max-height:100vh; overflow-y:auto;}
+  #twapp .sidenav .grp-label{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--gray); padding:12px 16px 4px;}
+  #twapp .navitem{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 16px; font-size:13.5px; color:var(--ink); cursor:pointer; border-left:3px solid transparent;}
+  #twapp .navitem:hover{background:rgba(30,73,118,0.07);}
+  #twapp .navitem.active{background:#fff; border-left:3px solid var(--orange); font-weight:600;}
+  #twapp .navitem .cnt{font-family:'IBM Plex Mono'; font-size:10.5px; color:var(--gray); background:var(--gray-bg); padding:1px 6px; border-radius:8px;}
+  #twapp .navitem.active .cnt{color:var(--orange-deep); background:#FBEAE0;}
+
+  #twapp main{flex:1; padding:22px 26px 60px; min-width:0;}
+  #twapp .pagehead{display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:4px; flex-wrap:wrap;}
+  #twapp .pagehead h2{font-size:24px; margin:0 0 2px;}
+  #twapp .pagehead .sub{font-size:12.5px; color:var(--gray);}
+  #twapp .actions{display:flex; gap:8px; flex-wrap:wrap;}
+
+  #twapp button{font-family:'Inter'; font-size:12.5px; font-weight:600; border-radius:var(--radius); cursor:pointer; padding:7px 12px; border:1px solid var(--line);}
+  #twapp button.primary{background:var(--ink); color:#fff; border-color:var(--ink);}
+  #twapp button.accent{background:var(--orange); color:#fff; border-color:var(--orange-deep);}
+  #twapp button.accent:hover{background:var(--orange-deep);}
+  #twapp button.ghost{background:#fff; color:var(--ink);}
+  #twapp button.ghost:hover{background:var(--gray-bg);}
+  #twapp button:disabled{opacity:.45; cursor:default;}
+
+  #twapp .tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius); margin-top:14px; background:#fff;}
+  #twapp table{border-collapse:collapse; width:100%; min-width:1040px; font-size:12.4px;}
+  #twapp thead th{background:var(--blue-pale); text-align:left; font-size:10.2px; text-transform:uppercase; letter-spacing:.05em; color:var(--blue-deep); padding:8px 6px; border-bottom:1px solid var(--line); white-space:nowrap; position:sticky; top:0;}
+  #twapp tbody td{padding:3px 4px; border-bottom:1px solid var(--line-soft); vertical-align:middle;}
+  #twapp tbody tr:hover{background:#FAFBFC;}
+  #twapp tbody tr.total-row td, #twapp tbody tr.group-row td{background:var(--blue-pale); font-weight:700; border-top:1px solid var(--blue);}
+  #twapp tbody tr.grand-row td{background:var(--ink); color:#fff; font-weight:700;}
+  #twapp td input, #twapp td select{width:100%; border:1px solid transparent; background:transparent; padding:5px 3px; font-size:12.2px; border-radius:2px; color:var(--ink); font-family:inherit;}
+  #twapp td input:hover, #twapp td select:hover{background:var(--gray-bg);}
+  #twapp td input:focus, #twapp td select:focus{outline:none; border:1px solid var(--blue); background:#fff;}
+  #twapp td input.num{text-align:right; font-family:'IBM Plex Mono'; width:48px;}
+  #twapp td.readonly{color:var(--gray); font-family:'IBM Plex Mono'; padding:5px 5px;}
+  #twapp td.readonly.strong{color:var(--ink); font-weight:600;}
+  #twapp td select{appearance:auto;}
+  #twapp col.c-group{width:118px;} #twapp col.c-purpose{width:130px;} #twapp col.c-detail{width:62px;} #twapp col.c-material{width:130px;}
+  #twapp col.c-len{width:66px;} #twapp col.c-sp{width:68px;} #twapp col.c-num{width:44px;}
+  #twapp col.c-qty{width:52px;} #twapp col.c-loc{width:68px;} #twapp col.c-price{width:62px;} #twapp col.c-total{width:72px;} #twapp col.c-status{width:92px;} #twapp col.c-del{width:30px;}
+
+  #twapp .status-pill{display:inline-flex; align-items:center; gap:5px; font-size:10.6px; font-weight:600; padding:4px 8px; border-radius:12px; cursor:pointer; border:1px solid transparent; white-space:nowrap;}
+  #twapp .status-pending{background:var(--gray-bg); color:var(--gray);}
+  #twapp .status-ordered{background:var(--amber-bg); color:var(--amber);}
+  #twapp .status-received{background:var(--green-bg); color:var(--green);}
+  #twapp .status-pill .sdot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+
+  #twapp .tag-pill{display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:9px;}
+  #twapp .tag-added{background:var(--green-bg); color:var(--green);}
+  #twapp .tag-changed{background:var(--amber-bg); color:var(--amber);}
+  #twapp .tag-removed{background:var(--red-bg); color:var(--red);}
+
+  #twapp .delbtn{width:24px;height:24px;border-radius:3px;border:1px solid var(--line);background:#fff;color:#B23A2E;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  #twapp .delbtn:hover{background:#FBEAE6;}
+
+  #twapp .kpi-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin-top:16px;}
+  #twapp .kpi{background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:14px 16px; position:relative; overflow:hidden;}
+  #twapp .kpi::before{content:"";position:absolute;top:0;left:0;width:4px;height:100%;background:var(--blue);}
+  #twapp .kpi.k-orange::before{background:var(--orange);} #twapp .kpi.k-green::before{background:var(--green);} #twapp .kpi.k-amber::before{background:var(--amber);}
+  #twapp .kpi .klabel{font-size:10.5px; text-transform:uppercase; letter-spacing:.07em; color:var(--gray); margin-bottom:6px;}
+  #twapp .kpi .kval{font-family:'IBM Plex Mono'; font-size:24px; font-weight:600;}
+  #twapp .kpi .ksub{font-size:11px; color:var(--gray); margin-top:2px;}
+
+  #twapp .section-bars{margin-top:22px; background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:16px;}
+  #twapp .sbar-row{display:grid; grid-template-columns:170px 1fr 90px; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--line-soft); font-size:12.3px;}
+  #twapp .sbar-row:last-child{border-bottom:none;}
+  #twapp .sbar-track{height:9px; background:var(--gray-bg); border-radius:5px; overflow:hidden; display:flex;}
+  #twapp .sbar-fill-received{background:var(--green); height:100%;}
+  #twapp .sbar-fill-ordered{background:var(--amber); height:100%;}
+  #twapp .sbar-amt{font-family:'IBM Plex Mono'; text-align:right; font-size:12px; color:var(--gray);}
+  #twapp .legend{display:flex; gap:16px; font-size:11px; color:var(--gray); margin-top:10px;}
+  #twapp .legend span{display:inline-flex; align-items:center; gap:5px;}
+  #twapp .legend i{width:8px;height:8px;border-radius:2px;display:inline-block;}
+
+  #twapp .titleblock{margin-top:22px; border:1px solid var(--line); background:#fff; border-radius:var(--radius); padding:16px 18px; display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px 24px;}
+  #twapp .titleblock .tb-field label{display:block; font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--gray); margin-bottom:4px;}
+  #twapp .titleblock input{width:100%; border:none; border-bottom:1px solid var(--line); padding:4px 2px; font-size:13.5px; background:transparent; color:var(--ink); font-family:inherit;}
+  #twapp .titleblock input:focus{outline:none; border-bottom:1px solid var(--orange);}
+
+  #twapp .empty{padding:34px 12px; text-align:center; color:var(--gray); font-size:13px;}
+  #twapp .searchbox{position:relative;}
+  #twapp .searchbox input{padding:7px 10px 7px 28px; border:1px solid var(--line); border-radius:var(--radius); font-size:12.5px; width:180px;}
+  #twapp .searchbox::before{content:"⌕"; position:absolute; left:9px; top:50%; transform:translateY(-50%); color:var(--gray); font-size:13px;}
+
+  #twapp .footnote{margin-top:26px; font-size:11px; color:var(--gray); border-top:1px solid var(--line-soft); padding-top:12px; line-height:1.6;}
+  #twapp .infobox{margin-top:14px; background:var(--blue-pale); border:1px solid var(--line); border-radius:var(--radius); padding:12px 14px; font-size:12px; color:var(--blue-deep); line-height:1.55;}
+  #twapp .infobox b{color:var(--ink);}
+
+  @media (max-width:820px){
+    #twapp .shell{flex-direction:column;}
+    #twapp .sidenav{width:100%; position:relative; min-height:auto; display:flex; overflow-x:auto; white-space:nowrap; padding:8px; max-height:none;}
+    #twapp .sidenav .grp-label{display:none;}
+    #twapp .navitem{border-left:none; border-bottom:3px solid transparent; flex:none;}
+    #twapp .navitem.active{border-left:none; border-bottom:3px solid var(--orange);}
+    #twapp main{padding:16px 14px 50px;}
+    #twapp .topbar{padding:12px 14px;}
+  }
+
+  /* ================= HOME / PROJECT PICKER ================= */
+  #twapp .homewrap{padding:26px 20px 100px; max-width:820px; margin:0 auto;}
+  #twapp .backlink{display:inline-flex; align-items:center; gap:6px; color:rgba(255,255,255,0.85); font-size:12.5px; font-weight:600; cursor:pointer; padding:4px 2px;}
+  #twapp .backlink:hover{color:#fff;}
+  #twapp .job-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:26px 18px; margin-top:8px;}
+  #twapp .job-cell{display:flex; flex-direction:column; align-items:center; gap:9px; cursor:pointer;}
+  #twapp .job-circle{width:104px; height:104px; border-radius:50%; background:var(--ink); color:#fff; display:flex; align-items:center; justify-content:center;
+    font-family:'Oswald',sans-serif; font-weight:700; font-size:19px; letter-spacing:.02em; text-align:center; padding:6px;
+    box-shadow:0 6px 14px rgba(16,35,59,0.28), inset 0 -6px 14px rgba(255,255,255,0.06); border:1px solid var(--blue-deep); transition:transform .12s ease;}
+  #twapp .job-cell:hover .job-circle{transform:translateY(-2px); box-shadow:0 10px 18px rgba(16,35,59,0.32);}
+  #twapp .job-circle.new{background:transparent; border:2px dashed var(--line); color:var(--orange); font-size:36px; font-weight:400; box-shadow:none;}
+  #twapp .job-circle.new:hover{border-color:var(--orange); background:var(--blue-pale);}
+  #twapp .job-name{font-size:11.5px; text-align:center; color:var(--ink); font-weight:600; line-height:1.3; max-width:118px;}
+  #twapp .job-sub{font-size:10px; color:var(--gray); text-align:center;}
+
+  #twapp .newjob-card{background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:16px; margin-top:18px; max-width:360px;}
+  #twapp .newjob-card label{display:block; font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--gray); margin:10px 0 4px;}
+  #twapp .newjob-card label:first-child{margin-top:0;}
+  #twapp .newjob-card input{width:100%; border:1px solid var(--line); border-radius:var(--radius); padding:8px 9px; font-size:13.5px; font-family:inherit;}
+  #twapp .newjob-card .row{display:flex; gap:10px; margin-top:14px;}
+
+  #twapp .listrow{display:flex; align-items:center; gap:14px; padding:12px 10px; border-bottom:1px solid var(--line-soft); background:#fff; cursor:pointer;}
+  #twapp .listrow:hover{background:var(--blue-pale);}
+  #twapp .listrow .lr-badge{width:40px;height:40px;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-weight:700;font-size:11px;flex:none;}
+  #twapp .listrow .lr-main{flex:1; min-width:0;}
+  #twapp .listrow .lr-name{font-size:13.5px; font-weight:600;}
+  #twapp .listrow .lr-meta{font-size:11px; color:var(--gray); margin-top:1px;}
+  #twapp .listrow .lr-arrow{color:var(--gray); font-size:16px;}
+
+  #twapp .cfgrow{display:flex; align-items:center; gap:10px; padding:10px; border:1px solid var(--line); border-radius:var(--radius); background:#fff; margin-bottom:10px;}
+  #twapp .cfgrow input{border:1px solid var(--line); border-radius:2px; padding:6px 8px; font-size:12.8px; font-family:inherit;}
+  #twapp .cfgrow input.abbr{width:80px; text-transform:uppercase; font-family:'IBM Plex Mono';}
+  #twapp .cfgrow input.name{flex:1;}
+
+  #twapp .bottomnav{position:fixed; left:0; right:0; bottom:0; background:var(--ink); border-top:1px solid var(--blue-deep); display:flex; z-index:50; padding-bottom:env(safe-area-inset-bottom,0);}
+  #twapp .bnav-item{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:9px 4px 8px; color:rgba(255,255,255,0.55); cursor:pointer; font-size:10.5px; font-weight:600; background:none; border:none;}
+  #twapp .bnav-item svg{width:19px;height:19px;}
+  #twapp .bnav-item.active{color:#fff;}
+  #twapp .bnav-item.active svg{color:var(--orange);}
+  #twapp .with-bottomnav{padding-bottom:64px;}
+</style>
+
+<div id="twapp">
+  <div class="ruler"></div>
+  <div class="topbar">
+    <div class="brand"><span class="disp" style="font-size:19px;">Next Level Construction</span><span class="tag">MATERIAL LIST</span></div>
+    <span class="backlink" id="btn-back-home" style="display:none;">← All Jobs</span>
+    <div class="proj-edit" id="proj-edit"></div>
+    <div class="sync" id="sync-indicator"><span class="dot"></span><span id="sync-text">synced</span></div>
+  </div>
+  <div class="shell" id="shell" style="display:none;">
+    <nav class="sidenav" id="sidenav"></nav>
+    <main id="content" class="with-bottomnav"></main>
+  </div>
+  <div id="homecontent" class="with-bottomnav"></div>
+  <nav class="bottomnav" id="bottomnav">
+    <button class="bnav-item" data-bnav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Home</span></button>
+    <button class="bnav-item" data-bnav="list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg><span>Lista</span></button>
+    <button class="bnav-item" data-bnav="config"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg><span>Config</span></button>
+    <button class="bnav-item" data-bnav="more"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/></svg><span>More</span></button>
+  </nav>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var SEED = {"sections": [{"id": "sub-floor", "label": "Sub-Floor", "purposes": ["Bottom Plate", "2nd Plate", "3rd Plate", "Stud", "Corner - Intersections", "End Studs", "Jacks - Kings", "Header", "Post", "Mid-Span Block", "Demising Sheathing", "Kitchen - Bathroom Block", "Interior Sheathing", "Wall Bracing", "Rim Board", "Ribbon", "Flush Beams", "Strong Back", "Glue", "Sheathing", "Banding", "Fire / Stop", "Ledger", "OSHA Railing - Fence"]}, {"id": "1st-walls", "label": "1st Floor Walls", "purposes": ["Bottom Plate", "2nd Plate", "3rd Plate", "Stud", "Stud - Balloon Wall", "Post", "Post - Balloon Wall", "Jacks - Kings", "Header", "Corner - Intersections", "Corner - Balloon Wall", "End Studs", "Mid-Span Block", "Safety Railing Windows", "Exterior Sheathing", "Spacer", "3rd Plate 2x6", "Demising Sheathing", "Stud - 12\" O.C.", "Stud - 16\" O.C.", "Stud - NLB - 24\" O.C.", "Bottom Plate - Stair", "2nd Plate - Stair", "3rd Plate - Stair", "Stud - Stair", "Kitchen - Bathroom Block", "Kitchen Island - Bottom Plate", "Kitchen Island - 2nd Plate", "Kitchen Island - 3rd Plate", "Kitchen Island - Stud - 24\" O.C.", "ADA Blocking", "Wall Bracing", "Anchor Bolt", "Washers", "Strap @ Window Openings", "Fasteners", "Red Shots", "Fasteners @ SW", "Fasteners @ BW", "Floor Truss Bracing", "Floor Sheathing", "Floor Sheathing - Bath Tub", "Glue", "Exterior Ribbon/Blocking", "Exterior Ledger", "Exterior Band Sheathing", "Corridor Ribbon", "Corridor Flush Beam", "Interior Flush Beam", "Demising Ribbon", "Demising Blocking", "Demising Draft Stopping", "Exterior Ledger Screws", "Exterior H3 Clips", "Demising A35 @ P1", "Demising A35 @ P2"]}, {"id": "2nd-walls", "label": "2nd Floor Walls", "purposes": ["Bottom Plate", "2nd Plate", "3rd Plate", "Stud", "Post", "Jacks - Kings", "Header", "Corner - Intersections", "End Studs", "Mid-Span Block", "Safety Railing Windows", "Exterior Sheathing", "Spacer", "3rd Plate 2x6", "Demising Sheathing", "Stud - 16\" O.C.", "Stud - NLB - 24\" O.C.", "Kitchen - Bathroom Block", "Kitchen Island - Bottom Plate", "Kitchen Island - 2nd Plate", "Kitchen Island - 3rd Plate", "Kitchen Island - Stud - 24\" O.C.", "ADA Blocking", "Wall Bracing", "Strap @ Window Openings", "Fasteners", "Red Shots", "Fasteners @ SW", "Fasteners @ BW", "Floor Truss Bracing", "Floor Sheathing", "Floor Sheathing - Bath Tub", "Glue", "Exterior Ribbon/Blocking", "Exterior Band Sheathing", "Corridor Ribbon", "Corridor Flush Beam", "Interior Flush Beam", "Demising Ribbon", "Demising Blocking", "Demising Draft Stopping", "OSHA Posts - Fence", "OSHA Railing - Fence", "Demising A35 @ P1", "Demising A35 @ P2"]}, {"id": "3rd-walls", "label": "3rd Floor Walls", "purposes": ["Bottom Plate", "Top Plate", "Studs", "Header"]}, {"id": "4th-walls", "label": "4th Floor Walls", "purposes": ["Top + Bottom Plate", "Studs", "Header"]}, {"id": "5th-walls", "label": "5th Floor Walls", "purposes": ["Top + Bottom Plate", "Studs", "Header", "Rim Board", "Ribbon", "Flush Beams", "Strong Back", "Glue", "Sheathing", "Banding", "Fire / Stop", "Ledger", "OSHA Railing"]}, {"id": "6th-walls", "label": "6th Floor Walls", "purposes": ["Top + Bottom Plate", "Studs", "Header"]}, {"id": "roof", "label": "Roof", "purposes": ["Strong Back", "Glue", "Low Roof Sheathing", "Roof Sheathing", "Roof Sheathing @ Overframing", "Gable Sheathing", "Fascia", "Blocking behind Fascia", "Exterior Blocking", "Corridor & Demising Draft Stopping", "Corridor Flush Beam", "Demising Blocking", "Sill Seal", "Plate", "Rim Board", "Joist", "Sheathing", "Curb", "Bottom Plate", "2nd Plate", "3rd Plate", "Stud", "Jacks - Kings", "Header", "Corner - Intersections", "End Studs", "Mid-Span Block", "Exterior Sheathing", "Ply Clips", "Exterior H Clips", "Exterior A Clips", "Corridor H Clips", "Demising A35 @ P1", "Demising A35 @ P2", "Demising H Clips", "Demising Clips"]}, {"id": "flush-beam", "label": "Flush Beam", "purposes": ["Bottom Plate", "2nd Plate", "3rd Plate", "Stud", "Jacks - Kings", "Header", "Corner - Intersections", "End Studs", "Post", "Mid-Span Block", "OSHA Railing Windows", "Exterior Sheathing", "Corridor Sheathing", "Demising Sheathing", "Kitchen - Bathroom Block", "Interior Sheathing", "Wall Bracing"]}, {"id": "shaft-wall", "label": "Shaft Wall", "purposes": ["Shaft Liner", "C Channel - Sides", "C Channel - T&B", "H Channel", "Breakaway Clip", "Wood Screw", "Pan Head Metal Screw", "C Channel"]}, {"id": "stair-tower", "label": "Stair Tower", "purposes": ["Ribbon", "Blocking", "Draft Stopping", "White Plate", "PT Plate", "Anchors", "Ledger", "Beams", "Joists", "Posts", "Landing Sheathing", "Ledger Screws", "Concealed Beam Hanger", "Joist Hanger", "Post Base", "Post Cap", "Base Anchor Screw", "Glue", "Stair Ledger", "Stair Beams", "Stair Joists", "Felt Paper", "Concealed Hanger", "Bolt", "Washer - Nuts"]}, {"id": "balcony", "label": "Balcony", "purposes": ["Ledger", "Soffit", "Joists", "Beam", "Post", "Floor Sheathing", "Self Adhering Membrane", "Ledger Screws", "Joist Hanger", "Beam Hanger", "Post Base", "Post Base Anchor", "Post Cap"]}, {"id": "windows", "label": "Windows & Doors", "purposes": ["Window", "Single Window", "Double Window", "Triple Window", "Sliding Door", "Single Door", "Double Door", "Single Transom", "Double Transom", "Quadruple Transom", "House Wrap", "Wrap Tape", "Flex Wrap", "Straight Flashing", "Shims", "Screw - Intus", "Silicone - Caulk"]}], "database": [{"material": "2X4", "length": "12'", "species": "DF.No2", "supply": "FACTORY", "unitPriceOutTax": 0}], "lengths": ["2'", "4'", "8'", "10'", "12'", "14'", "16'", "18'", "20'", "22'", "24'", "32SF", "36SF", "50'", "75'", "92 5/8\"", "104 5/8\"", "100'", "1000'", "1200'", "1350'", "116 5/8\"", "N/A"], "locations": ["FACTORY", "FIELD"], "species": ["DF.No2", "FR.No2", "HF.No2", "SPSS", "SP.No1", "SP.No1.PT", "SP.No2", "SP.No2.PT", "SPF.No2", "SPF.No2.PT", "SYP.No2", "SYP.No2.PT", "LVL", "LSL", "PSL", "SHEATHING", "HANGERS_CLIPS", "BASE_CAP", "HOLDOWNS_STRAPS", "BOLT_SCREWS", "EPOXY", "GLUE", "Sill.Seal", "WINDOWS", "SHAFTWALL"], "spacing": ["10'", "12\"", "16\"", "24\"", "32\"", "4'", "6'", "8\""], "suppliers": [{"id": "sup1", "name": "FACTORY", "tax": 0, "delay": 0}, {"id": "sup2", "name": "FIELD", "tax": 0, "delay": 0}], "groups": ["SUB-LOOR - WALL", "HARDWARE - SUB-LOOR - WALL", "1ST FLOOR - DECK", "HARDWARE - 1ST FLOOR - DECK", "1ST FLOOR - WALL", "HARDWARE - 1ST FLOOR - WALL", "2ND FLOOR - DECK", "HARDWARE - 2ND FLOOR - DECK", "2ND FLOOR - WALL", "HARDWARE - 2ND FLOOR - WALL", "3RD FLOOR - DECK", "HARDWARE - 3RD FLOOR - DECK", "3RD FLOOR - WALL", "HARDWARE - 3RD FLOOR - WALL", "4TH FLOOR - DECK", "HARDWARE - 4TH FLOOR - DECK", "4TH FLOOR - WALL", "HARDWARE - 4TH FLOOR - WALL", "5TH FLOOR - DECK", "HARDWARE - 5TH FLOOR - DECK", "5TH FLOOR - WALL", "HARDWARE - 5TH FLOOR - WALL", "6TH FLOOR - DECK", "HARDWARE - 6TH FLOOR - DECK", "6TH FLOOR - WALL", "HARDWARE - 6TH FLOOR - WALL", "ROOF", "HARDWARE - ROOF", "SHAFT WALL - 1", "SHAFT WALL - 2", "SHAFT WALL - 3", "SHAFT WALL - 4", "ELEVATOR TOWER", "HARDWARE TOWER - A", "STAIR TOWER - 1", "HARDWARE TOWER - 1", "STAIR TOWER - 2", "HARDWARE TOWER - 2", "STAIR TOWER - D", "HARDWARE TOWER - D", "BALCONY - FRONT  ELEVATION", "HARDWARE - BALCONY", "WINDOWS"], "dateBase": {"DF.No2": ["2x4", "2x6", "2x8", "2x10", "2x12", "4x4", "6x6"], "FR.No2": ["2x4", "2x6", "2x8", "2x10", "2x12", "4x4", "6x6"], "HF.No2": ["2x4", "2x6", "2x8", "2x10", "2x12", "4x4", "6x6"], "SPSS": ["2x4", "2x6", "2x8", "2x10", "2x12", "4x4", "6x6"], "SP.No1": ["2x4", "2x6", "2x8", "2x10", "2x12", "4x4", "6x6"], "SP.No1.PT": ["2x4", "2x6", "2x8", "2x10", "2x12", "4x4", "6x6"], "SP.No2": ["2x4", "2x6", "2x8", "2x10", "2x12", "4x4", "6x6"], "SP.No2.PT": ["2x4", "2x6", "2x8", "2x10", "2x12", "4x4", "6x6"], "SPF.No2": ["2x4", "2x6", "2x8", "2x10", "2x12", "4x4", "6x6"], "SPF.No2.PT": ["2x4", "2x6", "2x8", "2x10", "2x12", "4x4", "6x6"], "SYP.No2": ["2x4", "2x6", "2x8", "2x10", "2x12", "4x4", "6x6"], "SYP.No2.PT": ["2x4", "2x6", "2x8", "2x10", "2x12", "4x4", "6x6"], "LVL": ["1 1/4\" x 9 1/2\"", "1 1/4\" x 11 7/8\"", "1 1/4\" x 14\"", "1 1/4\" x 16\"", "1 3/4\" x 5 1/2\"", "1 3/4\" x 7 1/4\"", "1 3/4\" x 9 1/4\"", "1 3/4\" x 9 1/2\"", "1 3/4\" x 11 1/4\"", "1 3/4\" x 11 1/2\"", "1 3/4\" x 11 7/8\"", "1 3/4\" x 14\"", "1 3/4\" x 16\"", "1 3/4\" x 18\"", "1 3/4\" x 19\"", "1 3/4\" x 20\"", "1 3/4\" x 22\"", "1 3/4\" x 23 7/8\"", "1 3/4\" x 24\"", "3 1/2\" x 3 1/2\"", "3 1/2\" x 5 1/4\"", "3 1/2\" x 5 1/2\"", "3 1/2\" x 7\"", "3 1/2\" x 7 1/4\"", "3 1/2\" x 7 1/2\"", "3 1/2\" x 9 1/4\"", "3 1/2\" x 9 1/2\"", "3 1/2\" x 11 1/4\"", "3 1/2\" x 11 1/2\"", "3 1/2\" x 11 7/8\"", "3 1/2\" x 14\"", "3 1/2\" x 16\"", "3 1/2\" x 18\"", "3 1/2\" x 20\"", "5 1/4\" x 3 1/2\"", "5 1/4\" x 5 1/4\"", "5 1/4\" x 5 1/2\"", "5 1/4\" x 7\"", "5 1/4\" x 7 1/4\"", "5 1/4\" x 7 1/2\"", "5 1/4\" x 9 1/4\"", "5 1/4\" x 9 1/2\"", "5 1/4\" x 11 7/8\"", "5 1/4\" x 11 1/4\"", "5 1/4\" x 11 1/2\"", "5 1/2\" x 3 1/2\"", "5 1/2\" x 5 1/4\"", "5 1/2\" x 5 1/2\"", "5 1/2\" x 7\"", "5 1/2\" x 7 1/4\"", "5 1/2\" x 7 1/2\"", "5 1/2\" x 9 1/4\"", "5 1/2\" x 9 1/2\"", "5 1/2\" x 11 1/4\"", "5 1/2\" x 11 1/2\"", "5 1/2\" x 11 7/8\"", "5 1/2\" x 14\"", "5 1/2\" x 16\"", "5 1/2\" x 18\"", "5 1/2\" x 20\"", "7 1/2\" x 3 1/2\"", "7 1/2\" x 5 1/4\"", "7 1/2\" x 5 1/2\"", "7 1/2\" x 7\"", "7 1/2\" x 7 1/4\"", "7 1/2\" x 7 1/2\"", "7 1/2\" x 9 1/4\"", "7 1/2\" x 9 1/2\"", "7 1/2\" x 11 1/4\"", "7 1/2\" x 11 1/2\"", "7 1/2\" x 11 7/8\"", "7 1/2\" x 14\"", "7 1/2\" x 16\"", "7 1/2\" x 18\"", "7 1/2\" x 20\"", "8 1/2\" x 3 1/2\"", "8 1/2\" x 5 1/4\"", "8 1/2\" x 5 1/2\"", "8 1/2\" x 7\"", "8 1/2\" x 7 1/4\"", "8 1/2\" x 7 1/2\"", "8 1/2\" x 9 1/4\"", "8 1/2\" x 9 1/2\"", "8 1/2\" x 11 1/4\"", "8 1/2\" x 11 1/2\"", "8 1/2\" x 11 7/8\"", "8 1/2\" x 14\"", "8 1/2\" x 16\"", "8 1/2\" x 18\"", "8 1/2\" x 20\""], "LSL": ["1 1/4\" x 9 1/2\"", "1 1/4\" x 11 7/8\"", "1 1/4\" x 14\"", "1 1/4\" x 16\"", "1 3/4\" x 5 1/2\"", "1 3/4\" x 7 1/4\"", "1 3/4\" x 9 1/4\"", "1 3/4\" x 9 1/2\"", "1 3/4\" x 11 1/4\"", "1 3/4\" x 11 1/2\"", "1 3/4\" x 11 7/8\"", "1 3/4\" x 14\"", "1 3/4\" x 16\"", "1 3/4\" x 18\"", "1 3/4\" x 19\"", "1 3/4\" x 20\"", "1 3/4\" x 22\"", "1 3/4\" x 23 7/8\"", "1 3/4\" x 24\"", "3 1/2\" x 3 1/2\"", "3 1/2\" x 5 1/4\"", "3 1/2\" x 5 1/2\"", "3 1/2\" x 7\"", "3 1/2\" x 7 1/4\"", "3 1/2\" x 7 1/2\"", "3 1/2\" x 9 1/4\"", "3 1/2\" x 9 1/2\"", "3 1/2\" x 11 1/4\"", "3 1/2\" x 11 1/2\"", "3 1/2\" x 11 7/8\"", "3 1/2\" x 14\"", "3 1/2\" x 16\"", "3 1/2\" x 18\"", "3 1/2\" x 20\"", "5 1/4\" x 3 1/2\"", "5 1/4\" x 5 1/4\"", "5 1/4\" x 5 1/2\"", "5 1/4\" x 7\"", "5 1/4\" x 7 1/4\"", "5 1/4\" x 7 1/2\"", "5 1/4\" x 9 1/4\"", "5 1/4\" x 9 1/2\"", "5 1/4\" x 11 7/8\"", "5 1/4\" x 11 1/4\"", "5 1/4\" x 11 1/2\"", "5 1/2\" x 3 1/2\"", "5 1/2\" x 5 1/4\"", "5 1/2\" x 5 1/2\"", "5 1/2\" x 7\"", "5 1/2\" x 7 1/4\"", "5 1/2\" x 7 1/2\"", "5 1/2\" x 9 1/4\"", "5 1/2\" x 9 1/2\"", "5 1/2\" x 11 1/4\"", "5 1/2\" x 11 1/2\"", "5 1/2\" x 11 7/8\"", "5 1/2\" x 14\"", "5 1/2\" x 16\"", "5 1/2\" x 18\"", "5 1/2\" x 20\"", "7 1/2\" x 3 1/2\"", "7 1/2\" x 5 1/4\"", "7 1/2\" x 5 1/2\"", "7 1/2\" x 7\"", "7 1/2\" x 7 1/4\"", "7 1/2\" x 7 1/2\"", "7 1/2\" x 9 1/4\"", "7 1/2\" x 9 1/2\"", "7 1/2\" x 11 1/4\"", "7 1/2\" x 11 1/2\"", "7 1/2\" x 11 7/8\"", "7 1/2\" x 14\"", "7 1/2\" x 16\"", "7 1/2\" x 18\"", "7 1/2\" x 20\"", "8 1/2\" x 3 1/2\"", "8 1/2\" x 5 1/4\"", "8 1/2\" x 5 1/2\"", "8 1/2\" x 7\"", "8 1/2\" x 7 1/4\"", "8 1/2\" x 7 1/2\"", "8 1/2\" x 9 1/4\"", "8 1/2\" x 9 1/2\"", "8 1/2\" x 11 1/4\"", "8 1/2\" x 11 1/2\"", "8 1/2\" x 11 7/8\"", "8 1/2\" x 14\"", "8 1/2\" x 16\"", "8 1/2\" x 18\"", "8 1/2\" x 20\""], "PSL": ["1 1/4\" x 9 1/2\"", "1 1/4\" x 11 7/8\"", "1 1/4\" x 14\"", "1 1/4\" x 16\"", "1 3/4\" x 5 1/2\"", "1 3/4\" x 7 1/4\"", "1 3/4\" x 9 1/4\"", "1 3/4\" x 9 1/2\"", "1 3/4\" x 11 1/4\"", "1 3/4\" x 11 1/2\"", "1 3/4\" x 11 7/8\"", "1 3/4\" x 14\"", "1 3/4\" x 16\"", "1 3/4\" x 18\"", "1 3/4\" x 19\"", "1 3/4\" x 20\"", "1 3/4\" x 22\"", "1 3/4\" x 23 7/8\"", "1 3/4\" x 24\"", "3 1/2\" x 3 1/2\"", "3 1/2\" x 5 1/4\"", "3 1/2\" x 5 1/2\"", "3 1/2\" x 7\"", "3 1/2\" x 7 1/4\"", "3 1/2\" x 7 1/2\"", "3 1/2\" x 9 1/4\"", "3 1/2\" x 9 1/2\"", "3 1/2\" x 11 1/4\"", "3 1/2\" x 11 1/2\"", "3 1/2\" x 11 7/8\"", "3 1/2\" x 14\"", "3 1/2\" x 16\"", "3 1/2\" x 18\"", "3 1/2\" x 20\"", "5 1/4\" x 3 1/2\"", "5 1/4\" x 5 1/4\"", "5 1/4\" x 5 1/2\"", "5 1/4\" x 7\"", "5 1/4\" x 7 1/4\"", "5 1/4\" x 7 1/2\"", "5 1/4\" x 9 1/4\"", "5 1/4\" x 9 1/2\"", "5 1/4\" x 11 7/8\"", "5 1/4\" x 11 1/4\"", "5 1/4\" x 11 1/2\"", "5 1/2\" x 3 1/2\"", "5 1/2\" x 5 1/4\"", "5 1/2\" x 5 1/2\"", "5 1/2\" x 7\"", "5 1/2\" x 7 1/4\"", "5 1/2\" x 7 1/2\"", "5 1/2\" x 9 1/4\"", "5 1/2\" x 9 1/2\"", "5 1/2\" x 11 1/4\"", "5 1/2\" x 11 1/2\"", "5 1/2\" x 11 7/8\"", "5 1/2\" x 14\"", "5 1/2\" x 16\"", "5 1/2\" x 18\"", "5 1/2\" x 20\"", "7 1/2\" x 3 1/2\"", "7 1/2\" x 5 1/4\"", "7 1/2\" x 5 1/2\"", "7 1/2\" x 7\"", "7 1/2\" x 7 1/4\"", "7 1/2\" x 7 1/2\"", "7 1/2\" x 9 1/4\"", "7 1/2\" x 9 1/2\"", "7 1/2\" x 11 1/4\"", "7 1/2\" x 11 1/2\"", "7 1/2\" x 11 7/8\"", "7 1/2\" x 14\"", "7 1/2\" x 16\"", "7 1/2\" x 18\"", "7 1/2\" x 20\"", "8 1/2\" x 3 1/2\"", "8 1/2\" x 5 1/4\"", "8 1/2\" x 5 1/2\"", "8 1/2\" x 7\"", "8 1/2\" x 7 1/4\"", "8 1/2\" x 7 1/2\"", "8 1/2\" x 9 1/4\"", "8 1/2\" x 9 1/2\"", "8 1/2\" x 11 1/4\"", "8 1/2\" x 11 1/2\"", "8 1/2\" x 11 7/8\"", "8 1/2\" x 14\"", "8 1/2\" x 16\"", "8 1/2\" x 18\"", "8 1/2\" x 20\""], "SHEATHING": ["Plywood - 7/16\" x 4'x8' ", "Plywood - 7/16\" x 4'x9' ", "Plywood - 1/2\" x 4'x8'", "Plywood - 1/2\" x 4'x9'", "Denseglass - 5/8\" x 4'x8'", "Plywood APA Rated Exp 1 - 5/8\" x 4'x8'", "Plywood - 5/8\" x 4'x8'", "Plywood - 5/8\" x 4'x9'", "Plywood - 23/32\" x 4'x8'", "Plywood - 23/32\" x 4'x9'", "Plywood - 3/4\" x 4'x8'", "Plywood - 3/4\" x 4'x9'", "Plywood - 7/8\" x 4'x8'", "Plywood - 7/8\" x 4'x9'", "OSB - 7/16\" x 4'x8' ", "OSB - 7/16\" x 4'x9' ", "OSB - 1/2\" x 4'x8'", "OSB - 1/2\" x 4'x9'", "OSB - 5/8\" x 4'x8'", "OSB - 5/8\" x 4'x9'", "OSB - 23/32\" x 4'x8'", "OSB - 23/32\" x 4'x9'", "OSB T&G - 3/4\" x 4'x8'", "OSB - 3/4\" x 4'x8'", "OSB - 3/4\" x 4'x9'", "OSB - 7/8\" x 4'x8'", "OSB - 7/8\" x 4'x9'", "CDX - 7/16\" x 4'x8' ", "CDX - 7/16\" x 4'x9' ", "CDX PT - 1/2\" x 4'x8'", "CDX - 1/2\" x 4'x8'", "CDX - 1/2\" x 4'x9'", "CDX - 5/8\" x 4'x8'", "CDX - 5/8\" x 4'x9'", "CDX - 23/32\" x 4'x8'", "CDX - 23/32\" x 4'x9'", "CDX - 3/4\" x 4'x8'", "CDX - 3/4\" x 4'x9'", "CDX - 7/8\" x 4'x8'", "CDX - 7/8\" x 4'x9'", "ZIP-SYSTEM R3 15/16\" x 4'x8'", "ZIP-SYSTEM R3 15/16\" x 4'x9'", "ZIP-SYSTEM R6 1 7/16\" x 4'x8'", "ZIP-SYSTEM R6 1 7/16\" x 4'x9'", "ZIP-SYSTEM R9 1 15/16\" x 4'x8'", "ZIP-SYSTEM R9 1 15/16\" x 4'x9'", "ZIP-SYSTEM R12 2 7/16\" x 4'x8'", "ZIP-SYSTEM R12 2 7/16\" x 4'x9'"], "HANGERS_CLIPS": ["LUS210-2", "LUS210", "LUS210-3", "LUS212", "LUS212-3", "LUS212-4", "HU68", "LUS210Z", "LUSZ10-2S", "LSSU28", "LUS24Z", "LUS26-2Z", "HUC210-3Z", "HUC212-3", "LUS28", "HUS26", "LUS210Z", "JUS414", "MUS26", "IUS2.56/9.5", "A34", "A35", "H1", "H3", "H6", "5/8\" Clips", "H4", "H2.5T CLIP", "Galvanized LUS210", "Galvanized HUC210-2"], "BASE_CAP": ["A23Z", "GA1", "Galvanized ABA44RZ", "Galvanized LCE4", "Galvanized BC46", "Galvanized ABW66Z", "LCE4", "BC6Z", "TJC37", "THD37500H", "ABW667 BASE", "L70Z", "ABU66Z", "ABU46Z", "ABU444Z"], "HOLDOWNS_STRAPS": ["ST6224", "L90Z", "MTS10Z", "LSTA9", "HDU5-SDS2.5", "Galvanized HDU4-SDS2.5", "Galvanized HDU5-SDS2.5", "Simpson CS14 (100'/Roll)"], "BOLT_SCREWS": ["Simpson 1/4\"x3-1/2\" SDS Screws", "Simpson 1/4\"x5\" SDS Screws", "1/2\" Dia. x 6\" Hilti Kwik EZ-HUS", "1/2\" Dia. x 5\" Hilti Kwik EZ-HUS", "5/8\" Dia. x 3\" Long Thru Bolt", "5/8\" Dia. x 4\" Long Thru Bolt", "5/8\" Dia. x 32\" Long Thrreaded Rod", "No. 7 Gage x 3-1/2\" Long Screw", "No. 7 Gage x 4\" Long Screw", "No. 7 Gage x 4-1/2\" Long Screw", "No. 8 Gage x 3-1/2\" Long Screw", "No. 8 Gage x 4-1/2\" Long Screw", "5/8\" Dia. x 5\" Expansion Bolts", "Galvanized Simpson 1/2\"x6\" Titen HD Screw", "Galvanized 1/2\"x8\" Anchor Bolts", "Galvanized Simpson 1/4\"x3-1/2\" SDS Screws", "Galvanized 1/2\" Dia. x 9\"", "Galvanized 5/8\" Dia. x 6\" Long Titen Bolt", "Galvanized 3/16\"x1-1/2\"x1-1/2\" Plate Washers", "Galvanized Hilti X-CP 72 PAFs", "Galvanized 1/4\"x2-3/4\" Tapcon Screws", "Hilti Red Shots", "1/2\" Washers", "1/2\" Nuts", "Galvanized 1/2\" Washers", "Galvanized 1/2\" Nuts", "5/8\" Washers", "5/8\" Nuts", "Galvanized 5/8\" Washers", "Galvanized 5/8\" Nuts", "Galvanized 3\"x3\"x0.229\""], "EPOXY": ["HILTI HIT-HY 270", "HILTI HIT-HY 200"], "GLUE": ["Subfloor Adhesive 29 OZ", "Liquid Applied", "White Sylicone"], "Sill.Seal": ["Rolls Of Sill Seal - 50'/Roll"], "WINDOWS": ["WOOD SHIMS", "COMPOSITE SHIMS", "10-13 x 2\" GP SCREWS", "9\"x50' - FLEX WRAP", "9\"x75' - FLEX WRAP", "1 3/4\" x 75' TYVEK TAPE", "1 3/4\" x 150' TYVEK TAPE", "1 3/4\" x 75' TYPAR TAPE", "1 3/4\" x 150' TYPAR TAPE", "9'x146' TYPAR TAPE", "4\" x 75' STRAIGHT FLASHING", "6\" x 75' STRAIGHT FLASHING", "9\" x 75' STRIGH FLASHING ZIP", "4' x 100' TYVEK ROLL", "4' x 150' TYVEK ROLL", "8' x 100' TYVEK ROLL", "8' x 150' TYVEK ROLL", "9' x 100' TYVEK ROLL", "9' x 150' TYVEK ROLL", "4' x 100' TYPAR ROLL", "4' x 150' TYPAR ROLL", "8' x 100' TYPAR ROLL", "8' x 150' TYPAR ROLL", "9' x 100' TYPAR ROLL", "9' x 150' TYPAR ROLL", "3\"x165' TYPAR TAPE"], "SHAFTWALL": ["1\" x 10' SHAFT LINER ", "1\" x 12' SHAFT LINER", "2\" x 10' C CHANNEL", "2\" x 12' C CHANNEL", "2\" x 10' H CHANNEL", "2\" x 12' H CHANNEL", "BREAKAWAY CLIP", "1\" WOOD SCREWS", "3/8\" PAN HEAD METAL"]}, "sectionDefaultGroup": {"sub-floor": "SUB-LOOR - WALL", "1st-walls": "1ST FLOOR - WALL", "2nd-walls": "2ND FLOOR - WALL", "3rd-walls": "3RD FLOOR - WALL", "4th-walls": "4TH FLOOR - WALL", "5th-walls": "5TH FLOOR - WALL", "6th-walls": "6TH FLOOR - WALL", "roof": "ROOF", "flush-beam": "", "shaft-wall": "SHAFT WALL - 1", "stair-tower": "STAIR TOWER - 1", "balcony": "BALCONY - FRONT  ELEVATION", "windows": "WINDOWS"}, "project": {"name": "AVENEL", "jobsite": "", "builder": "", "createdBy": "", "archDate": "", "structDate": "", "totalSF": ""}};
+  var SECTIONS = SEED.sections;
+  var LENGTHS = SEED.lengths, LOCATIONS = SEED.locations, SPECIES = SEED.species, SPACINGS = SEED.spacing;
+  var GROUPS = SEED.groups, DATEBASE = SEED.dateBase, DEFAULT_GROUP = SEED.sectionDefaultGroup;
+
+  var state = {
+    projects: [],
+    currentProjectId: null,
+    bottomView: 'home', // 'home' | 'list' | 'config' | 'more'
+    homeLevel: 'home', // 'project-menu' | 'shell' (only meaningful when currentProjectId is set)
+    project: {name:"", jobsite:"", builder:"", createdBy:"", archDate:"", structDate:"", totalSF:""},
+    database: [],
+    suppliers: [],
+    items: {},
+    received: [],
+    audit: [],
+    auditSnapshot: {},
+    tab: "dashboard",
+    loaded: false,
+    projectLoaded: false
+  };
+
+  function uid(){ return 'i' + Math.random().toString(36).slice(2,10); }
+  function pkey(k){ return 'proj:' + state.currentProjectId + ':' + k; }
+
+  // ---- Sync layer: a small dirty-key queue flushed gently, never spams the console ----
+  // One failed write no longer triggers a burst of retries; it just stays "dirty" and gets
+  // picked up by the next flush cycle (every 6s) or the next time the user edits something.
+  var dirty = {};      // key -> valueGetter (latest value to persist)
+  var inFlight = {};   // key -> true while a set() is in progress for it
+  var flushTimer = null;
+
+  function setSyncing(mode){
+    // mode: 'saving' | 'stalled' | 'idle'
+    var el = document.getElementById('sync-indicator'); var txt = document.getElementById('sync-text');
+    if(!el) return;
+    el.classList.remove('saving','sync-error');
+    if(mode==='stalled'){ el.classList.add('sync-error'); txt.innerHTML = 'not synced yet — <a href="#" id="retry-sync-link" style="color:inherit;text-decoration:underline;">retry</a>'; var l=document.getElementById('retry-sync-link'); if(l) l.addEventListener('click', function(e){ e.preventDefault(); flushDirty(); }); }
+    else if(mode==='saving'){ el.classList.add('saving'); txt.textContent='syncing…'; }
+    else { txt.textContent='synced'; }
+  }
+
+  function markDirty(key, valueGetter, delay){
+    dirty[key] = valueGetter;
+    setSyncing('saving');
+    if(flushTimer) clearTimeout(flushTimer);
+    flushTimer = setTimeout(flushDirty, delay||500);
+  }
+  function debouncedSave(key, valueGetter, delay){ markDirty(key, valueGetter, delay); }
+
+  function flushDirty(){
+    var keys = Object.keys(dirty).filter(function(k){ return !inFlight[k]; });
+    if(keys.length===0) return;
+    var settled = 0, anyFailed = false;
+    keys.forEach(function(key){
+      var valueGetter = dirty[key];
+      delete dirty[key];
+      inFlight[key] = true;
+      window.storage.set(key, JSON.stringify(valueGetter()), true)
+        .then(function(){ delete inFlight[key]; })
+        .catch(function(){
+          delete inFlight[key];
+          anyFailed = true;
+          // keep it dirty so the next cycle (or next edit) tries again — silently, no console spam
+          if(!dirty[key]) dirty[key] = valueGetter;
+        })
+        .then(function(){
+          settled++;
+          if(settled===keys.length){
+            var stillDirty = Object.keys(dirty).length>0;
+            if(stillDirty){
+              setSyncing('stalled');
+              if(flushTimer) clearTimeout(flushTimer);
+              flushTimer = setTimeout(flushDirty, 8000); // background retry, spaced out
+            } else {
+              setSyncing('idle');
+            }
+          }
+        });
+    });
+  }
+  // Also retry whenever the tab/section regains focus (covers "came back after a network blip")
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) flushDirty(); });
+
+  function loadKey(key){
+    return window.storage.get(key, true).then(function(res){ return res ? JSON.parse(res.value) : null; }).catch(function(){ return null; });
+  }
+
+  function loadProjects(){
+    return loadKey('projects-list').then(function(v){
+      if(v && v.length){ state.projects = v; return; }
+      // first run: seed with the AVENEL project already in progress
+      state.projects = [{id:'avenel', abbr:'AVN', name:'AVENEL', createdAt:new Date().toISOString()}];
+      debouncedSave('projects-list', function(){ return state.projects; }, 50);
+    });
+  }
+  function saveProjects(){ debouncedSave('projects-list', function(){ return state.projects; }, 50); }
+
+  function createProject(abbr, name){
+    var id = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+    var p = {id:id, abbr:(abbr||'JOB').toUpperCase().slice(0,5), name:name||abbr||'New Job', createdAt:new Date().toISOString()};
+    state.projects.push(p);
+    saveProjects();
+    return p;
+  }
+
+  function openProject(id){
+    state.currentProjectId = id;
+    state.homeLevel = 'project-menu';
+    state.tab = 'dashboard';
+    state.projectLoaded = false;
+    document.getElementById('shell').style.display = 'none';
+    document.getElementById('homecontent').style.display = '';
+    document.getElementById('btn-back-home').style.display = '';
+    document.getElementById('homecontent').innerHTML = '<div class="empty" style="padding:80px 0;">Loading project…</div>';
+    loadAll().then(function(){
+      state.projectLoaded = true;
+      if(Object.keys(state.auditSnapshot).length===0 && state.audit.length===0){ state.auditSnapshot = aggregateByItemKeyGlobal(); }
+      renderAll();
+    });
+  }
+  function goHome(){
+    state.currentProjectId = null;
+    state.homeLevel = 'home';
+    state.bottomView = 'home';
+    document.getElementById('shell').style.display = 'none';
+    document.getElementById('homecontent').style.display = '';
+    document.getElementById('btn-back-home').style.display = 'none';
+    document.getElementById('proj-edit').innerHTML = '';
+    renderAll();
+  }
+  function backOneLevel(){
+    if(state.homeLevel==='shell'){ state.homeLevel='project-menu'; renderAll(); }
+    else { goHome(); }
+  }
+
+  function loadAll(){
+    var jobs = [];
+    var needsSeed = {project:false, database:false, suppliers:false};
+    jobs.push(loadKey(pkey('project-info')).then(function(v){
+      var seedProj = (state.currentProjectId==='avenel') ? Object.assign({}, SEED.project) : {name:'', jobsite:'', builder:'', createdBy:'', archDate:'', structDate:'', totalSF:''};
+      state.project = v || seedProj; needsSeed.project = !v;
+    }));
+    jobs.push(loadKey(pkey('database')).then(function(v){
+      var seedDb = (state.currentProjectId==='avenel') ? SEED.database.map(function(d){ return Object.assign({id:uid()}, d); }) : [];
+      state.database = v || seedDb; needsSeed.database = !v;
+    }));
+    jobs.push(loadKey(pkey('suppliers')).then(function(v){
+      state.suppliers = v || SEED.suppliers.map(function(s){ return Object.assign({}, s); }); needsSeed.suppliers = !v;
+    }));
+    jobs.push(loadKey(pkey('received-log')).then(function(v){ state.received = v || []; }));
+    jobs.push(loadKey(pkey('audit-log')).then(function(v){ state.audit = v || []; }));
+    jobs.push(loadKey(pkey('audit-snapshot')).then(function(v){ state.auditSnapshot = v || {}; }));
+    jobs.push(loadKey(pkey('items-all')).then(function(v){
+      state.items = v || {};
+      SECTIONS.forEach(function(sec){ if(!state.items[sec.id]) state.items[sec.id] = []; });
+    }));
+    return Promise.all(jobs).then(function(){
+      // Only the handful of keys that were genuinely empty get written back, and staggered
+      // (not fired all at once) so a fresh project never bursts many simultaneous writes.
+      var i = 0;
+      if(needsSeed.project) setTimeout(saveProject, (i++)*180);
+      if(needsSeed.database) setTimeout(saveDatabase, (i++)*180);
+      if(needsSeed.suppliers) setTimeout(saveSuppliers, (i++)*180);
+    });
+  }
+  function saveProject(){ debouncedSave(pkey('project-info'), function(){ return state.project; }); }
+  function saveDatabase(){ debouncedSave(pkey('database'), function(){ return state.database; }); }
+  function saveSuppliers(){ debouncedSave(pkey('suppliers'), function(){ return state.suppliers; }); }
+  function saveItemsAll(){ debouncedSave(pkey('items-all'), function(){ return state.items; }); }
+  function saveItems(sid){ saveItemsAll(); scheduleAudit(); }
+  function saveReceived(){ debouncedSave(pkey('received-log'), function(){ return state.received; }); }
+  function saveAudit(){ debouncedSave(pkey('audit-log'), function(){ return state.audit; }, 50); debouncedSave(pkey('audit-snapshot'), function(){ return state.auditSnapshot; }, 50); }
+
+  // ================= CALC ENGINE (faithful to workbook LET formula) =================
+  function norm(s){ return (s===undefined||s===null?'':String(s)).trim().toLowerCase(); }
+  function parseLenVal(raw){
+    if(raw===undefined||raw===null) return null;
+    var s = String(raw).trim();
+    if(!s || s.toUpperCase()==='N/A') return null;
+    s = s.replace(/'/g,'').replace(/"/g,'').replace(/SF/gi,'').trim();
+    if(!s) return null;
+    var m = s.match(/^(\d+(?:\.\d+)?)\s+(\d+)\/(\d+)$/);
+    if(m) return parseFloat(m[1]) + parseFloat(m[2])/parseFloat(m[3]);
+    m = s.match(/^(\d+)\/(\d+)$/);
+    if(m) return parseFloat(m[1])/parseFloat(m[2]);
+    var n = parseFloat(s);
+    return isNaN(n) ? null : n;
+  }
+  function parseSpacingAndPly(spRaw){
+    var out = {spacing:null, ply:null};
+    if(spRaw===undefined||spRaw===null||spRaw==='') return out;
+    if(typeof spRaw==='number' || /^\d+(\.\d+)?$/.test(String(spRaw).trim())){ out.spacing = parseFloat(spRaw); return out; }
+    var spText = String(spRaw).trim();
+    var mPly = spText.match(/(\d+(?:\.\d+)?)\s*ply/i);
+    if(mPly){ out.ply = parseFloat(mPly[1]); return out; }
+    var mFt = spText.match(/(\d+(?:\.\d+)?)\s*'/) || spText.match(/(\d+(?:\.\d+)?)\s*ft/i);
+    if(mFt){ out.spacing = parseFloat(mFt[1])*12; return out; }
+    var mIn = spText.match(/(\d+(?:\.\d+)?)\s*"/) || spText.match(/(\d+(?:\.\d+)?)\s*in/i);
+    if(mIn){ out.spacing = parseFloat(mIn[1]); return out; }
+    return out;
+  }
+  function computeQty(item){
+    var len = parseLenVal(item.length);
+    var lf = parseFloat(item.lf) || 0, sf = parseFloat(item.sf) || 0, ea = parseFloat(item.ea) || 0;
+    var desc = (item.purpose||'').toLowerCase();
+    var sap = parseSpacingAndPly(item.sp);
+    var spacing = sap.spacing, ply = sap.ply;
+    var spacingCount = (spacing>0 && lf>0) ? (lf*12/spacing) : null;
+    var rawQty = null;
+    if(desc.indexOf('end stud')>=0){ rawQty = lf>0 ? (lf*2/12) : null; }
+    else if(spacingCount>0 && ea>0){ rawQty = spacingCount*ea; }
+    else if(spacingCount>0){ rawQty = spacingCount; }
+    else if(ply>0 && lf>0 && len!==null){ rawQty = (ply*lf)/len; }
+    else if(ply>0 && ea>0){ rawQty = ply*ea; }
+    else if(lf>0 && len!==null){ rawQty = lf/len; }
+    else if(sf>0 && len!==null){ rawQty = sf/len; }
+    else if(ea>0){ rawQty = ea; }
+    if(rawQty===null) return null;
+    var addWaste = (desc.indexOf('sheathing')>=0 && desc.indexOf('roof')>=0) ? 1.05 : 1;
+    return Math.ceil(rawQty*addWaste);
+  }
+  function cleanKeyPart(v){ return (v===undefined||v===null)?'':String(v).trim(); }
+  function buildItemKey(material, length, species){
+    var p0=cleanKeyPart(material), p1=cleanKeyPart(length), p2=cleanKeyPart(species);
+    if(p1.toUpperCase()==='N/A') p1='';
+    var parts=[]; if(p0) parts.push(p0); if(p1) parts.push(p1); if(p2) parts.push(p2);
+    return parts.join('|');
+  }
+  function itemKeyOf(item){ return buildItemKey(item.material, item.length, item.species).toLowerCase(); }
+  function dbKeyOf(d){ return buildItemKey(d.material, d.length, d.species).toLowerCase(); }
+  function displayKeyOf(item){ return buildItemKey(item.material, item.length, item.species); }
+
+  function taxForSupply(name){
+    var s = state.suppliers.find(function(x){ return norm(x.name)===norm(name); });
+    return s ? (parseFloat(s.tax)||0) : 0;
+  }
+  function findDbEntry(item){
+    var k = itemKeyOf(item); if(!k) return null;
+    return state.database.find(function(d){ return dbKeyOf(d)===k; }) || null;
+  }
+  function unitPriceOf(dbEntry){
+    if(!dbEntry) return null;
+    var outTax = parseFloat(dbEntry.unitPriceOutTax)||0;
+    return outTax * (1 + taxForSupply(dbEntry.supply)/100);
+  }
+  function lineTotal(item){
+    var db = findDbEntry(item); if(!db) return null;
+    var qty = computeQty(item); if(qty===null) return null;
+    return qty * unitPriceOf(db);
+  }
+  function sectionTotals(sid){
+    var items = state.items[sid]||[]; var total=0, ordered=0, received=0;
+    items.forEach(function(it){
+      var t = lineTotal(it);
+      if(t!==null){ total+=t; if(it.status==='ordered') ordered+=t; if(it.status==='received') received+=t; }
+    });
+    return {total:total, ordered:ordered, received:received, count:items.length};
+  }
+  function grandTotals(){
+    var g = {total:0, ordered:0, received:0, count:0};
+    SECTIONS.forEach(function(s){ var t = sectionTotals(s.id); g.total+=t.total; g.ordered+=t.ordered; g.received+=t.received; g.count+=t.count; });
+    return g;
+  }
+  function money(n){ return '$' + (n||0).toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2}); }
+  function esc(s){ return (s===undefined||s===null?'':String(s)).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+  function fmtDate(d){ if(!d) return '—'; try{ return new Date(d).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}); }catch(e){ return d; } }
+
+  // ================= AUTOMATIC "TAKEOFF" AGGREGATION (by GROUP -> ItemKey) =================
+  function allItemsFlat(){
+    var out = [];
+    SECTIONS.forEach(function(sec){ (state.items[sec.id]||[]).forEach(function(it){ out.push(it); }); });
+    return out;
+  }
+  function aggregateByGroup(){
+    // { groupName: { itemKeyLower: {material,length,species,qty,unit,total,statusCounts...} } }
+    var byGroup = {};
+    allItemsFlat().forEach(function(it){
+      var g = it.group || '(sem grupo)';
+      var k = itemKeyOf(it); if(!k) return;
+      var qty = computeQty(it); if(!qty) return;
+      var db = findDbEntry(it); var unit = db ? unitPriceOf(db) : null;
+      if(!byGroup[g]) byGroup[g] = {};
+      if(!byGroup[g][k]) byGroup[g][k] = {material:it.material, length:it.length, species:it.species, qty:0, unit:unit, supply:db?db.supply:null};
+      byGroup[g][k].qty += qty;
+    });
+    return byGroup;
+  }
+  function aggregateByItemKeyGlobal(){
+    var map = {};
+    allItemsFlat().forEach(function(it){
+      var k = itemKeyOf(it); if(!k) return;
+      var qty = computeQty(it); if(!qty) return;
+      map[k] = (map[k]||0) + qty;
+    });
+    return map;
+  }
+
+  // ================= AUDIT (mirrors PRICE_AUDIT) =================
+  var auditTimer = null;
+  function scheduleAudit(){ if(auditTimer) clearTimeout(auditTimer); auditTimer = setTimeout(runAuditDiff, 1400); }
+  function runAuditDiff(){
+    var current = aggregateByItemKeyGlobal();
+    var prev = state.auditSnapshot || {};
+    var diffs = [];
+    var now = new Date().toISOString();
+    Object.keys(current).forEach(function(k){
+      if(!(k in prev)){ diffs.push({ts:now, action:'ADDED', itemKey:k, oldQty:null, newQty:current[k]}); }
+      else if(prev[k] !== current[k]){ diffs.push({ts:now, action:'CHANGED', itemKey:k, oldQty:prev[k], newQty:current[k]}); }
+    });
+    Object.keys(prev).forEach(function(k){
+      if(!(k in current)){ diffs.push({ts:now, action:'REMOVED', itemKey:k, oldQty:prev[k], newQty:0}); }
+    });
+    if(diffs.length){
+      state.audit = diffs.concat(state.audit).slice(0, 400);
+      state.auditSnapshot = current;
+      saveAudit();
+      if(state.tab==='audit') renderAudit();
+    }
+  }
+
+  // ================= HOME / PROJECT PICKER =================
+  function projectStats(p){
+    // best-effort synchronous stats aren't available without loading; keep it light (name/abbr only) for the grid
+    return p;
+  }
+  function renderHome(){
+    var html = '<div class="homewrap">';
+    html += '<div class="disp" style="font-size:15px;color:var(--gray);margin-bottom:2px;">Next Level Construction</div>';
+    html += '<div class="job-grid">';
+    html += '<div class="job-cell" data-newjob><div class="job-circle new">+</div><div class="job-name">New Job</div></div>';
+    state.projects.forEach(function(p){
+      html += '<div class="job-cell" data-open="'+esc(p.id)+'"><div class="job-circle">'+esc(p.abbr)+'</div><div class="job-name">'+esc(p.name)+'</div></div>';
+    });
+    html += '</div>';
+    html += '<div id="newjob-slot"></div>';
+    html += '</div>';
+    document.getElementById('homecontent').innerHTML = html;
+    document.querySelectorAll('#homecontent [data-open]').forEach(function(el){
+      el.addEventListener('click', function(){ openProject(this.dataset.open); });
+    });
+    document.querySelector('#homecontent [data-newjob]').addEventListener('click', showNewJobForm);
+  }
+  function showNewJobForm(){
+    var slot = document.getElementById('newjob-slot');
+    slot.innerHTML = '<div class="newjob-card">' +
+      '<label>Abbreviation (2–5 letters, shows in the circle)</label><input id="nj-abbr" maxlength="5" placeholder="e.g. NYD">' +
+      '<label>Job name</label><input id="nj-name" placeholder="e.g. New York Developers">' +
+      '<div class="row"><button class="accent" id="nj-create">Create job</button><button class="ghost" id="nj-cancel">Cancel</button></div>' +
+      '</div>';
+    document.getElementById('nj-cancel').addEventListener('click', function(){ slot.innerHTML=''; });
+    document.getElementById('nj-create').addEventListener('click', function(){
+      var abbr = document.getElementById('nj-abbr').value.trim();
+      var name = document.getElementById('nj-name').value.trim();
+      if(!abbr && !name){ return; }
+      var p = createProject(abbr, name);
+      slot.innerHTML='';
+      openProject(p.id);
+    });
+    document.getElementById('nj-abbr').focus();
+  }
+
+  function renderProjectListScreen(){
+    var html = '<div class="homewrap"><h2 style="margin:0 0 12px;">All Jobs</h2>';
+    if(state.projects.length===0){ html += '<div class="empty">Nenhum job ainda. Toque em Home para criar o primeiro.</div>'; }
+    state.projects.forEach(function(p){
+      html += '<div class="listrow" data-open="'+esc(p.id)+'"><div class="lr-badge">'+esc(p.abbr)+'</div>' +
+        '<div class="lr-main"><div class="lr-name">'+esc(p.name)+'</div><div class="lr-meta">Criado em '+fmtDate(p.createdAt)+'</div></div>' +
+        '<div class="lr-arrow">›</div></div>';
+    });
+    html += '</div>';
+    document.getElementById('homecontent').innerHTML = html;
+    document.querySelectorAll('#homecontent [data-open]').forEach(function(el){ el.addEventListener('click', function(){ openProject(this.dataset.open); }); });
+  }
+
+  function renderConfigScreen(){
+    var html = '<div class="homewrap"><h2 style="margin:0 0 4px;">Config</h2><div class="sub" style="color:var(--gray);font-size:12.5px;margin-bottom:14px;">Gerenciar jobs — renomear sigla/nome ou remover.</div>';
+    state.projects.forEach(function(p, idx){
+      html += '<div class="cfgrow" data-idx="'+idx+'"><input class="abbr" data-f="abbr" maxlength="5" value="'+esc(p.abbr)+'">' +
+        '<input class="name" data-f="name" value="'+esc(p.name)+'">' +
+        '<button class="ghost" data-open="'+esc(p.id)+'">Open</button>' +
+        '<button class="delbtn" data-delproj="'+idx+'">×</button></div>';
+    });
+    html += '</div>';
+    document.getElementById('homecontent').innerHTML = html;
+    document.querySelectorAll('#homecontent .cfgrow').forEach(function(row){
+      var idx = parseInt(row.dataset.idx,10);
+      row.querySelectorAll('input').forEach(function(inp){
+        inp.addEventListener('input', function(){ state.projects[idx][this.dataset.f] = this.dataset.f==='abbr'?this.value.toUpperCase():this.value; saveProjects(); });
+      });
+      row.querySelector('[data-open]').addEventListener('click', function(){ openProject(this.dataset.open); });
+      row.querySelector('[data-delproj]').addEventListener('click', function(){
+        if(!confirm('Remover este job da lista? Os dados salvos dele deixam de aparecer no app (mas não são apagados do armazenamento).')) return;
+        state.projects.splice(idx,1); saveProjects(); renderConfigScreen();
+      });
+    });
+  }
+
+  function renderMoreScreen(){
+    var html = '<div class="homewrap"><h2 style="margin:0 0 4px;">More</h2>' +
+      '<div class="infobox" style="margin-top:10px;"><b>Next Level Construction — Material List</b><br>Cada job tem sua própria lista de materiais, banco de preços, pedidos, recebimentos e auditoria, sincronizados automaticamente para toda a equipe que abrir este mesmo app.<br><br>' +
+      'QTY calculado com a fórmula original da planilha (LF/comprimento, espaçamento, plies, +5% de desperdício em roof sheathing). Preço final = preço sem imposto × (1 + Tax% do fornecedor).</div>' +
+      '<div class="actions" style="margin-top:16px;"><button class="ghost" id="btn-export-everything">Export all jobs (CSV)</button></div>' +
+      '</div>';
+    document.getElementById('homecontent').innerHTML = html;
+    document.getElementById('btn-export-everything').addEventListener('click', function(){
+      alert('Abra cada job e use "Export all (CSV)" no Dashboard — a exportação é por job para manter os dados organizados.');
+    });
+  }
+
+  function renderBottomNav(){
+    var bn = document.getElementById('bottomnav');
+    bn.querySelectorAll('.bnav-item').forEach(function(btn){
+      btn.classList.toggle('active', btn.dataset.bnav===state.bottomView || (state.bottomView==='project' && btn.dataset.bnav==='home' && false));
+    });
+  }
+  document.getElementById('bottomnav').querySelectorAll('.bnav-item').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var v = this.dataset.bnav;
+      if(v==='home'){ goHome(); }
+      else { state.currentProjectId=null; document.getElementById('shell').style.display='none'; document.getElementById('homecontent').style.display=''; document.getElementById('btn-back-home').style.display='none'; document.getElementById('proj-edit').innerHTML=''; state.bottomView=v; renderAll(); }
+    });
+  });
+  document.getElementById('btn-back-home').addEventListener('click', backOneLevel);
+
+  // ================= PROJECT MENU (circle grid, mirrors Home) =================
+  var TAB_CIRCLES = [
+    {id:'dashboard', abbr:'DASH', label:'Dashboard'},
+    {id:'sub-floor', abbr:'SF', label:'Sub-Floor'},
+    {id:'1st-walls', abbr:'1W', label:'1st Floor Walls'},
+    {id:'2nd-walls', abbr:'2W', label:'2nd Floor Walls'},
+    {id:'3rd-walls', abbr:'3W', label:'3rd Floor Walls'},
+    {id:'4th-walls', abbr:'4W', label:'4th Floor Walls'},
+    {id:'5th-walls', abbr:'5W', label:'5th Floor Walls'},
+    {id:'6th-walls', abbr:'6W', label:'6th Floor Walls'},
+    {id:'roof', abbr:'RF', label:'Roof'},
+    {id:'flush-beam', abbr:'FB', label:'Flush Beam'},
+    {id:'shaft-wall', abbr:'SW', label:'Shaft Wall'},
+    {id:'stair-tower', abbr:'ST', label:'Stair Tower'},
+    {id:'balcony', abbr:'BAL', label:'Balcony'},
+    {id:'windows', abbr:'WIN', label:'Windows & Doors'},
+    {id:'ordered', abbr:'ORD', label:'Ordered (auto)'},
+    {id:'received', abbr:'RCV', label:'Received'},
+    {id:'audit', abbr:'AUD', label:'Audit Log'},
+    {id:'database', abbr:'DB', label:'Materials DB'},
+    {id:'suppliers', abbr:'TAX', label:'Suppliers & Tax'}
+  ];
+  function renderProjectMenu(){
+    var p = state.projects.find(function(x){ return x.id===state.currentProjectId; });
+    var html = '<div class="homewrap">';
+    html += '<div class="disp" style="font-size:15px;color:var(--gray);margin-bottom:2px;">'+esc(p?p.name:'')+'</div>';
+    html += '<div class="job-grid">';
+    TAB_CIRCLES.forEach(function(c){
+      html += '<div class="job-cell" data-opentab="'+esc(c.id)+'"><div class="job-circle">'+esc(c.abbr)+'</div><div class="job-name">'+esc(c.label)+'</div></div>';
+    });
+    html += '</div></div>';
+    document.getElementById('homecontent').innerHTML = html;
+    document.querySelectorAll('#homecontent [data-opentab]').forEach(function(el){
+      el.addEventListener('click', function(){
+        state.tab = this.dataset.opentab;
+        state.homeLevel = 'shell';
+        renderAll();
+      });
+    });
+  }
+
+  // ================= NAV / SHELL =================
+  function renderProjEdit(){
+    var wrap = document.getElementById('proj-edit');
+    var fields = [['name','Project'], ['jobsite','Jobsite'], ['builder','Builder'], ['totalSF','Total SF']];
+    wrap.innerHTML = fields.map(function(f){
+      return '<span class="pinfo-label">'+f[1]+'</span><input class="pinfo" data-field="'+f[0]+'" placeholder="—" value="'+esc(state.project[f[0]]||'')+'">';
+    }).join('');
+    wrap.querySelectorAll('input.pinfo').forEach(function(inp){
+      inp.addEventListener('input', function(){ state.project[this.dataset.field] = this.value; saveProject(); });
+    });
+  }
+  function renderNav(){
+    var nav = document.getElementById('sidenav');
+    var html = '';
+    html += navItem('dashboard','Dashboard', grandTotals().count);
+    html += navItem('ordered','Ordered (auto)', Object.keys(aggregateByGroup()).length);
+    html += navItem('received','Received', state.received.length);
+    html += navItem('audit','Audit log', state.audit.length);
+    html += navItem('database','Materials DB', state.database.length);
+    html += navItem('suppliers','Suppliers & Tax', state.suppliers.length);
+    html += '<div class="grp-label">Takeoff Sections</div>';
+    SECTIONS.forEach(function(s){ html += navItem(s.id, s.label, (state.items[s.id]||[]).length); });
+    nav.innerHTML = html;
+    nav.querySelectorAll('.navitem').forEach(function(el){ el.addEventListener('click', function(){ state.tab = this.dataset.tab; renderAll(); }); });
+  }
+  function navItem(id,label,count){
+    var active = state.tab===id ? ' active':'';
+    return '<div class="navitem'+active+'" data-tab="'+id+'"><span>'+esc(label)+'</span><span class="cnt">'+count+'</span></div>';
+  }
+  function kpi(label,val,sub,cls){ return '<div class="kpi '+cls+'"><div class="klabel">'+esc(label)+'</div><div class="kval">'+val+'</div>' + (sub?'<div class="ksub">'+sub+'</div>':'') + '</div>'; }
+  function tbField(field,label){ return '<div class="tb-field"><label>'+esc(label)+'</label><input data-field="'+field+'" value="'+esc(state.project[field]||'')+'" placeholder="—"></div>'; }
+
+  // ================= DASHBOARD =================
+  function renderDashboard(){
+    var g = grandTotals();
+    var pctOrdered = g.total ? Math.round((g.ordered/g.total)*100) : 0;
+    var pctReceived = g.total ? Math.round((g.received/g.total)*100) : 0;
+    var html = '<div class="pagehead"><div><h2>Dashboard</h2><div class="sub">Live overview — syncs across the whole team</div></div>' +
+      '<div class="actions"><button class="ghost" id="btn-export-all">Export all (CSV)</button></div></div>';
+    html += '<div class="kpi-grid">' + kpi('Line items', g.count, '', '') + kpi('Estimated total', money(g.total), '', 'k-orange') +
+      kpi('Ordered value', money(g.ordered), pctOrdered+'% of total', 'k-amber') + kpi('Received value', money(g.received), pctReceived+'% of total', 'k-green') + '</div>';
+    html += '<div class="section-bars"><div class="disp" style="font-size:13px;letter-spacing:.06em;color:var(--gray);margin-bottom:10px;">By section</div>';
+    SECTIONS.forEach(function(s){
+      var t = sectionTotals(s.id);
+      var pOrd = t.total ? (t.ordered/t.total*100) : 0, pRec = t.total ? (t.received/t.total*100) : 0;
+      html += '<div class="sbar-row"><div>'+esc(s.label)+' <span class="mono" style="color:var(--gray);font-size:10.5px;">('+t.count+')</span></div>' +
+        '<div class="sbar-track"><div class="sbar-fill-received" style="width:'+pRec+'%"></div><div class="sbar-fill-ordered" style="width:'+Math.max(0,pOrd-pRec)+'%"></div></div>' +
+        '<div class="sbar-amt">'+money(t.total)+'</div></div>';
+    });
+    html += '<div class="legend"><span><i style="background:var(--green)"></i>Received</span><span><i style="background:var(--amber)"></i>Ordered</span><span><i style="background:var(--gray-bg);border:1px solid var(--line)"></i>Pending</span></div></div>';
+    html += '<div class="titleblock">' + tbField('name','Project Name') + tbField('jobsite','Jobsite Location') + tbField('builder','Builder Name') +
+      tbField('createdBy','Created By') + tbField('archDate','Architectural Plan Date') + tbField('structDate','Structural Plan Date') + tbField('totalSF','Total Square Feet') + '</div>';
+    html += '<div class="footnote">O TAKEOFF agora é automático: toda linha lançada em qualquer seção com um GROUP definido já entra somada na aba "Ordered (auto)", sem precisar consolidar manualmente. QTY, ItemKey e preço seguem a mesma lógica da planilha original.</div>';
+    document.getElementById('content').innerHTML = html;
+    document.getElementById('btn-export-all').addEventListener('click', exportAllCSV);
+    document.querySelectorAll('.titleblock input').forEach(function(inp){
+      inp.addEventListener('input', function(){ state.project[this.dataset.field]=this.value; saveProject(); renderProjEdit(); });
+    });
+  }
+
+  // ================= ORDERED (AUTOMATIC AGGREGATION) =================
+  function renderOrdered(){
+    var byGroup = aggregateByGroup();
+    var grandTotal = 0;
+    var html = '<div class="pagehead"><div><h2>Ordered <span class="mono" style="font-size:13px;color:var(--gray);">(auto)</span></h2>' +
+      '<div class="sub">Somado automaticamente de todas as seções, por GROUP → ItemKey — substitui o passo manual do TAKEOFF original.</div></div>' +
+      '<div class="actions"><button class="ghost" id="btn-export-ordered">Export CSV</button></div></div>';
+
+    html += '<div class="tablewrap"><table><colgroup><col style="width:180px"><col style="width:170px"><col style="width:90px"><col style="width:90px"><col style="width:90px"><col style="width:90px"><col style="width:90px"></colgroup>';
+    html += '<thead><tr><th>Group</th><th>Material · Length · Species</th><th>Qty</th><th>Supply</th><th>Unit $</th><th>Total</th></tr></thead><tbody>';
+
+    var groupNames = Object.keys(byGroup);
+    // keep GROUPS canonical order first, then any stray/unassigned
+    var ordered = GROUPS.filter(function(g){return byGroup[g];}).concat(groupNames.filter(function(g){return GROUPS.indexOf(g)<0;}));
+
+    if(ordered.length===0){
+      html += '<tr><td colspan="6" class="empty">Nenhum item com GROUP definido ainda. Escolha um Group em cada linha das seções de takeoff para aparecer aqui automaticamente.</td></tr>';
+    }
+    ordered.forEach(function(g){
+      var entries = byGroup[g];
+      var keys = Object.keys(entries);
+      var groupTotal = 0;
+      html += '<tr class="group-row"><td colspan="6">'+esc(g)+' <span class="mono" style="font-weight:400;font-size:10.5px;">('+keys.length+' item'+(keys.length!==1?'s':'')+')</span></td></tr>';
+      keys.forEach(function(k){
+        var e = entries[k];
+        var total = e.unit!==null ? e.unit*e.qty : null;
+        if(total!==null){ groupTotal += total; grandTotal += total; }
+        html += '<tr><td></td><td>'+esc([e.material,e.length,e.species].filter(Boolean).join(' · '))+'</td>' +
+          '<td class="readonly">'+e.qty+'</td><td class="readonly">'+esc(e.supply||'—')+'</td>' +
+          '<td class="readonly">'+(e.unit===null?'—':e.unit.toFixed(2))+'</td>' +
+          '<td class="readonly strong">'+(total===null?'—':money(total))+'</td></tr>';
+      });
+      html += '<tr class="total-row"><td colspan="5">Subtotal — '+esc(g)+'</td><td class="readonly strong">'+money(groupTotal)+'</td></tr>';
+    });
+    if(ordered.length){
+      html += '<tr class="grand-row"><td colspan="5">GRAND TOTAL</td><td>'+money(grandTotal)+'</td></tr>';
+    }
+    html += '</tbody></table></div>';
+    document.getElementById('content').innerHTML = html;
+    var btn = document.getElementById('btn-export-ordered');
+    if(btn) btn.addEventListener('click', function(){ exportOrderedCSV(byGroup); });
+  }
+  function exportOrderedCSV(byGroup){
+    var rows = [['Group','Material','Length','Species','Qty','Supply','Unit Price','Total']];
+    Object.keys(byGroup).forEach(function(g){
+      Object.keys(byGroup[g]).forEach(function(k){
+        var e = byGroup[g][k];
+        var total = e.unit!==null ? e.unit*e.qty : null;
+        rows.push([g, e.material, e.length, e.species, e.qty, e.supply||'', e.unit===null?'':e.unit.toFixed(2), total===null?'':total.toFixed(2)]);
+      });
+    });
+    downloadCSV((state.project.name||'project')+'-ordered.csv', rows);
+  }
+
+  // ================= RECEIVED =================
+  function renderReceived(){
+    var byGroup = aggregateByGroup();
+    var html = '<div class="pagehead"><div><h2>Received</h2><div class="sub">Registro de entregas — ticket, nota fiscal e data, comparado ao pedido (Ordered).</div></div>' +
+      '<div class="actions"><button class="accent" id="btn-add-recv">+ Add delivery</button></div></div>';
+
+    html += '<div class="tablewrap"><table><colgroup><col style="width:130px"><col style="width:80px"><col style="width:80px"><col style="width:100px"><col style="width:170px"><col style="width:60px"><col style="width:90px"><col style="width:90px"><col style="width:80px"><col style="width:80px"><col style="width:70px"><col style="width:30px"></colgroup>';
+    html += '<thead><tr><th>Group</th><th>Location</th><th>Supply</th><th>Date</th><th>Material · Length · Species</th><th>Qty</th><th>Ticket #</th><th>Invoice #</th><th>Payment</th><th>Total</th><th></th></tr></thead><tbody id="recv-tbody">';
+    if(state.received.length===0){
+      html += '<tr><td colspan="11" class="empty">Nenhuma entrega registrada ainda.</td></tr>';
+    } else {
+      state.received.forEach(function(r, idx){ html += receivedRow(r, idx); });
+    }
+    html += '</tbody></table></div>';
+
+    // Delivered by Group summary vs Ordered
+    html += '<div class="section-bars" style="margin-top:26px;"><div class="disp" style="font-size:13px;letter-spacing:.06em;color:var(--gray);margin-bottom:10px;">Delivered vs Ordered — by group</div>';
+    var groupNames = GROUPS.filter(function(g){ return byGroup[g]; });
+    if(groupNames.length===0){
+      html += '<div class="empty">Sem dados de pedido ainda.</div>';
+    }
+    groupNames.forEach(function(g){
+      var orderedTotal = 0;
+      Object.keys(byGroup[g]).forEach(function(k){ var e=byGroup[g][k]; if(e.unit!==null) orderedTotal += e.unit*e.qty; });
+      var deliveredTotal = 0;
+      state.received.filter(function(r){return r.group===g;}).forEach(function(r){ deliveredTotal += receivedLineTotal(r)||0; });
+      var pct = orderedTotal ? Math.min(100, (deliveredTotal/orderedTotal*100)) : 0;
+      html += '<div class="sbar-row"><div>'+esc(g)+'</div><div class="sbar-track"><div class="sbar-fill-received" style="width:'+pct+'%"></div></div>' +
+        '<div class="sbar-amt">'+money(deliveredTotal)+' / '+money(orderedTotal)+'</div></div>';
+    });
+    html += '</div>';
+    html += datalists();
+    document.getElementById('content').innerHTML = html;
+    wireReceivedEvents();
+  }
+  function receivedLineTotal(r){
+    var db = findDbEntry(r);
+    var unit = db ? unitPriceOf(db) : null;
+    var qty = parseFloat(r.qty)||0;
+    return unit===null ? null : unit*qty;
+  }
+  function receivedRow(r, idx){
+    var total = receivedLineTotal(r);
+    return '<tr data-idx="'+idx+'">' +
+      '<td><select data-f="group">'+groupOptions(r.group)+'</select></td>' +
+      '<td><input data-f="location" list="dl-locations" value="'+esc(r.location)+'"></td>' +
+      '<td><input data-f="supply" list="dl-suppliers" value="'+esc(r.supply)+'"></td>' +
+      '<td><input data-f="date" type="date" value="'+esc(r.date||'')+'"></td>' +
+      '<td style="display:flex;gap:2px;"><input data-f="material" placeholder="Material" value="'+esc(r.material)+'" style="flex:1;">' +
+        '<input data-f="length" placeholder="Len" list="dl-lengths" value="'+esc(r.length)+'" style="width:44px;">' +
+        '<input data-f="species" placeholder="Sp" list="dl-species" value="'+esc(r.species)+'" style="width:54px;"></td>' +
+      '<td><input class="num" data-f="qty" type="number" value="'+numOrEmpty(r.qty)+'"></td>' +
+      '<td><input data-f="ticket" value="'+esc(r.ticket)+'"></td>' +
+      '<td><input data-f="invoice" value="'+esc(r.invoice)+'"></td>' +
+      '<td><input data-f="payment" value="'+esc(r.payment)+'" placeholder="Paid/Due"></td>' +
+      '<td class="readonly strong">'+(total===null?'—':money(total))+'</td>' +
+      '<td><button class="delbtn" data-del="'+idx+'">×</button></td></tr>';
+  }
+  function groupOptions(sel){
+    var h = '<option value="">—</option>';
+    GROUPS.forEach(function(g){ h += '<option value="'+esc(g)+'"'+(g===sel?' selected':'')+'>'+esc(g)+'</option>'; });
+    return h;
+  }
+  function wireReceivedEvents(){
+    document.getElementById('btn-add-recv').addEventListener('click', function(){
+      state.received.unshift({id:uid(), group:'', location:'FACTORY', supply:'', date:'', material:'', length:'', species:'', qty:'', ticket:'', invoice:'', payment:''});
+      saveReceived(); renderReceived();
+    });
+    var tbody = document.getElementById('recv-tbody');
+    tbody.querySelectorAll('tr[data-idx]').forEach(function(row){
+      var idx = parseInt(row.dataset.idx,10);
+      row.querySelectorAll('input,select').forEach(function(inp){
+        inp.addEventListener('input', function(){
+          var f = this.dataset.f;
+          state.received[idx][f] = f==='qty' ? (this.value===''?'':parseFloat(this.value)||0) : this.value;
+          saveReceived();
+          var total = receivedLineTotal(state.received[idx]);
+          row.querySelector('td.readonly').textContent = total===null?'—':money(total);
+        });
+      });
+      var del = row.querySelector('[data-del]');
+      del.addEventListener('click', function(){ state.received.splice(idx,1); saveReceived(); renderReceived(); });
+    });
+  }
+
+  // ================= AUDIT LOG =================
+  function renderAudit(){
+    var html = '<div class="pagehead"><div><h2>Audit Log</h2><div class="sub">Histórico automático de alterações de quantidade por ItemKey — como a aba PRICE_AUDIT original.</div></div>' +
+      '<div class="actions"><button class="ghost" id="btn-export-audit">Export CSV</button></div></div>';
+    html += '<div class="tablewrap"><table style="min-width:0;"><colgroup><col style="width:160px"><col style="width:80px"><col style="width:260px"><col style="width:80px"><col style="width:80px"></colgroup>';
+    html += '<thead><tr><th>Timestamp</th><th>Action</th><th>ItemKey</th><th>Old Qty</th><th>New Qty</th></tr></thead><tbody>';
+    if(state.audit.length===0){
+      html += '<tr><td colspan="5" class="empty">Nenhuma mudança registrada ainda. O log é gerado automaticamente ao adicionar, editar ou remover linhas de takeoff.</td></tr>';
+    }
+    state.audit.forEach(function(a){
+      var cls = a.action==='ADDED'?'tag-added':(a.action==='REMOVED'?'tag-removed':'tag-changed');
+      html += '<tr><td class="readonly">'+new Date(a.ts).toLocaleString()+'</td><td><span class="tag-pill '+cls+'">'+a.action+'</span></td>' +
+        '<td class="readonly">'+esc(a.itemKey)+'</td><td class="readonly">'+(a.oldQty===null?'—':a.oldQty)+'</td><td class="readonly">'+a.newQty+'</td></tr>';
+    });
+    html += '</tbody></table></div>';
+    document.getElementById('content').innerHTML = html;
+    document.getElementById('btn-export-audit').addEventListener('click', function(){
+      var rows = [['Timestamp','Action','ItemKey','Old Qty','New Qty']];
+      state.audit.forEach(function(a){ rows.push([a.ts, a.action, a.itemKey, a.oldQty===null?'':a.oldQty, a.newQty]); });
+      downloadCSV((state.project.name||'project')+'-audit-log.csv', rows);
+    });
+  }
+
+  // ================= SUPPLIERS & TAX =================
+  function renderSuppliers(){
+    var html = '<div class="pagehead"><div><h2>Suppliers &amp; Tax</h2><div class="sub">Preço final = Preço sem imposto × (1 + Tax% do fornecedor) — igual à aba PRICE original.</div></div>' +
+      '<div class="actions"><button class="accent" id="btn-add-sup">+ Add supplier</button></div></div>';
+    html += '<div class="tablewrap"><table style="min-width:0;"><colgroup><col style="width:200px"><col style="width:120px"><col style="width:120px"><col style="width:34px"></colgroup>';
+    html += '<thead><tr><th>Supply (name)</th><th>Tax %</th><th>Delay (days)</th><th></th></tr></thead><tbody>';
+    state.suppliers.forEach(function(s,idx){
+      html += '<tr data-idx="'+idx+'"><td><input data-f="name" value="'+esc(s.name)+'"></td>' +
+        '<td><input class="num" data-f="tax" type="number" step="0.01" value="'+(s.tax||0)+'"></td>' +
+        '<td><input class="num" data-f="delay" type="number" step="1" value="'+(s.delay||0)+'"></td>' +
+        '<td><button class="delbtn" data-del="'+idx+'">×</button></td></tr>';
+    });
+    html += '</tbody></table></div>';
+    document.getElementById('content').innerHTML = html;
+    document.getElementById('btn-add-sup').addEventListener('click', function(){ state.suppliers.push({name:'', tax:0, delay:0}); saveSuppliers(); renderSuppliers(); });
+    document.querySelectorAll('#content tbody tr').forEach(function(row){
+      row.querySelectorAll('input').forEach(function(inp){
+        inp.addEventListener('input', function(){
+          var idx = parseInt(row.dataset.idx,10), f = this.dataset.f;
+          state.suppliers[idx][f] = (f==='tax'||f==='delay') ? (parseFloat(this.value)||0) : this.value;
+          saveSuppliers();
+        });
+      });
+    });
+    document.querySelectorAll('[data-del]').forEach(function(btn){ btn.addEventListener('click', function(){ state.suppliers.splice(parseInt(this.dataset.del,10),1); saveSuppliers(); renderSuppliers(); }); });
+  }
+
+  // ================= DATABASE =================
+  function renderDatabase(){
+    var html = '<div class="pagehead"><div><h2>Materials Database</h2><div class="sub">Catálogo Material · Comprimento · Espécie (ItemKey) com preço-base e fornecedor.</div></div>' +
+      '<div class="actions"><button class="accent" id="btn-add-db">+ Add material</button></div></div>';
+    html += '<div class="tablewrap"><table><colgroup><col style="width:190px"><col style="width:100px"><col style="width:120px"><col style="width:100px"><col style="width:100px"><col style="width:70px"><col style="width:100px"><col style="width:34px"></colgroup>';
+    html += '<thead><tr><th>Material</th><th>Length</th><th>Species</th><th>Supply</th><th>Unit $ (no tax)</th><th>Tax%</th><th>Unit $ (final)</th><th></th></tr></thead><tbody>';
+    if(state.database.length===0){ html += '<tr><td colspan="8" class="empty">No materials yet.</td></tr>'; }
+    state.database.forEach(function(d,idx){
+      var unitFinal = unitPriceOf(d);
+      html += '<tr data-idx="'+idx+'"><td><input data-f="material" value="'+esc(d.material)+'"></td>' +
+        '<td><input data-f="length" value="'+esc(d.length)+'" list="dl-lengths"></td>' +
+        '<td><input data-f="species" value="'+esc(d.species)+'" list="dl-species"></td>' +
+        '<td><input data-f="supply" value="'+esc(d.supply)+'" list="dl-suppliers"></td>' +
+        '<td><input class="num" data-f="unitPriceOutTax" type="number" step="0.01" value="'+(d.unitPriceOutTax||0)+'"></td>' +
+        '<td class="readonly">'+taxForSupply(d.supply).toFixed(2)+'</td>' +
+        '<td class="readonly strong">'+(unitFinal===null?'—':unitFinal.toFixed(2))+'</td>' +
+        '<td><button class="delbtn" data-del="'+idx+'">×</button></td></tr>';
+    });
+    html += '</tbody></table></div>' + datalists();
+    document.getElementById('content').innerHTML = html;
+    document.getElementById('btn-add-db').addEventListener('click', function(){
+      state.database.push({id:uid(), material:'', length:'', species:'', supply:'FACTORY', unitPriceOutTax:0});
+      saveDatabase(); renderDatabase();
+    });
+    document.querySelectorAll('#content tbody tr').forEach(function(row){
+      row.querySelectorAll('input').forEach(function(inp){
+        inp.addEventListener('input', function(){
+          var idx = parseInt(row.dataset.idx,10), f = this.dataset.f;
+          state.database[idx][f] = f==='unitPriceOutTax' ? (parseFloat(this.value)||0) : this.value;
+          saveDatabase(); renderDatabase();
+        });
+      });
+    });
+    document.querySelectorAll('[data-del]').forEach(function(btn){ btn.addEventListener('click', function(){ state.database.splice(parseInt(this.dataset.del,10),1); saveDatabase(); renderDatabase(); }); });
+  }
+
+  function datalists(){
+    var h = '<datalist id="dl-lengths">' + LENGTHS.map(function(l){return '<option value="'+esc(l)+'">';}).join('') + '</datalist>';
+    h += '<datalist id="dl-species">' + SPECIES.map(function(l){return '<option value="'+esc(l)+'">';}).join('') + '</datalist>';
+    h += '<datalist id="dl-locations">' + LOCATIONS.map(function(l){return '<option value="'+esc(l)+'">';}).join('') + '</datalist>';
+    h += '<datalist id="dl-spacing">' + SPACINGS.map(function(l){return '<option value="'+esc(l)+'">';}).join('') + '<option value="2 Ply"><option value="3 Ply"></datalist>';
+    h += '<datalist id="dl-suppliers">' + state.suppliers.map(function(s){return '<option value="'+esc(s.name)+'">';}).join('') + '</datalist>';
+    return h;
+  }
+  function materialOptionsForSpecies(sp){
+    var list = DATEBASE[sp];
+    if(!list){
+      var key = Object.keys(DATEBASE).find(function(k){ return norm(k)===norm(sp); });
+      list = key ? DATEBASE[key] : null;
+    }
+    return list || [];
+  }
+
+  // ================= SECTION TABLES =================
+  function renderSection(sid){
+    var sec = SECTIONS.find(function(s){return s.id===sid;});
+    if(!sec) return renderDashboard();
+    var items = state.items[sid] || [];
+    var t = sectionTotals(sid);
+    var html = '<div class="pagehead"><div><h2>'+esc(sec.label)+'</h2><div class="sub">'+items.length+' line item(s) · estimated '+money(t.total)+'</div></div>' +
+      '<div class="actions"><div class="searchbox"><input id="sec-search" placeholder="Filter rows…"></div>' +
+      '<button class="ghost" id="btn-export-sec">Export CSV</button><button class="accent" id="btn-add-row">+ Add line</button></div></div>';
+
+    html += '<div class="tablewrap"><table><colgroup>' +
+      '<col class="c-group"><col class="c-purpose"><col class="c-detail"><col class="c-material"><col class="c-len"><col class="c-sp">' +
+      '<col class="c-num"><col class="c-num"><col class="c-sp"><col class="c-num"><col class="c-qty"><col class="c-loc">' +
+      '<col class="c-price"><col class="c-total"><col class="c-status"><col class="c-del">' +
+      '</colgroup><thead><tr>' +
+      '<th>Group</th><th>Purpose</th><th>Page/Detail</th><th>Material</th><th>Length</th><th>Species</th>' +
+      '<th>LF</th><th>SF</th><th>SP</th><th>EA</th><th>QTY</th><th>Location</th>' +
+      '<th>Unit $</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody id="sec-tbody">';
+
+    if(items.length===0){
+      html += '<tr><td colspan="16" class="empty">Nenhuma linha ainda. Clique em "+ Add line" para começar o takeoff desta seção.</td></tr>';
+    } else {
+      items.forEach(function(it, idx){ html += sectionRow(sec, it, idx); });
+    }
+    html += '<tr class="total-row"><td colspan="13">Section total</td><td class="readonly strong">'+money(t.total)+'</td><td colspan="2"></td></tr>';
+    html += '</tbody></table></div>';
+    // Per-row Material datalists live here — NOT inside <tr> (a <tr> can only contain <td>/<th>,
+    // so a <datalist> placed inside one gets silently relocated by the browser, breaking the
+    // species -> material dependent dropdown). Rendering them here keeps a stable, findable DOM node.
+    items.forEach(function(it, idx){
+      html += '<datalist id="dl-mat-'+sec.id+'-'+idx+'">' + materialOptionsForSpecies(it.species).map(function(m){return '<option value="'+esc(m)+'">';}).join('') + '</datalist>';
+    });
+    html += '<datalist id="dl-purpose-'+sec.id+'">' + sec.purposes.map(function(p){return '<option value="'+esc(p)+'">';}).join('') + '</datalist>';
+    html += datalists();
+    document.getElementById('content').innerHTML = html;
+    wireSectionEvents(sec);
+  }
+
+  function sectionRow(sec, it, idx){
+    var qty = computeQty(it);
+    var total = lineTotal(it);
+    var db = findDbEntry(it);
+    var unit = db ? unitPriceOf(db) : null;
+    var statusCls = 'status-'+(it.status||'pending');
+    var statusLabel = it.status==='received'?'Received':(it.status==='ordered'?'Ordered':'Pending');
+    var matDlId = 'dl-mat-'+sec.id+'-'+idx;
+    return '<tr data-idx="'+idx+'">' +
+      '<td><select data-f="group">'+groupOptions(it.group)+'</select></td>' +
+      '<td><input data-f="purpose" list="dl-purpose-'+sec.id+'" value="'+esc(it.purpose)+'"></td>' +
+      '<td><input data-f="pageDetail" value="'+esc(it.pageDetail)+'"></td>' +
+      '<td><input data-f="material" list="'+matDlId+'" value="'+esc(it.material)+'" placeholder="choose Species first"></td>' +
+      '<td><input data-f="length" list="dl-lengths" value="'+esc(it.length)+'"></td>' +
+      '<td><input data-f="species" list="dl-species" value="'+esc(it.species)+'"></td>' +
+      '<td><input class="num" data-f="lf" type="number" value="'+numOrEmpty(it.lf)+'"></td>' +
+      '<td><input class="num" data-f="sf" type="number" value="'+numOrEmpty(it.sf)+'"></td>' +
+      '<td><input data-f="sp" list="dl-spacing" value="'+esc(it.sp)+'" placeholder="16 / 2 Ply"></td>' +
+      '<td><input class="num" data-f="ea" type="number" value="'+numOrEmpty(it.ea)+'"></td>' +
+      '<td class="readonly qty-cell">'+(qty===null?'—':qty)+'</td>' +
+      '<td><input data-f="location" list="dl-locations" value="'+esc(it.location)+'"></td>' +
+      '<td class="readonly price-cell">'+(unit===null?'—':unit.toFixed(2))+'</td>' +
+      '<td class="readonly total-cell">'+(total===null?'—':money(total))+'</td>' +
+      '<td><span class="status-pill '+statusCls+'" data-status-toggle><span class="sdot"></span>'+statusLabel+'</span></td>' +
+      '<td><button class="delbtn" data-del>×</button></td>' +
+      '</tr>';
+  }
+  function numOrEmpty(v){ return (v===undefined||v===null||v==='') ? '' : v; }
+
+  function wireSectionEvents(sec){
+    var tbody = document.getElementById('sec-tbody');
+    function refreshRow(idx){
+      var it = state.items[sec.id][idx];
+      var row = tbody.querySelector('tr[data-idx="'+idx+'"]');
+      if(!row) return;
+      var qty = computeQty(it), db = findDbEntry(it), unit = db?unitPriceOf(db):null, total = lineTotal(it);
+      row.querySelector('.qty-cell').textContent = qty===null?'—':qty;
+      row.querySelector('.price-cell').textContent = unit===null?'—':unit.toFixed(2);
+      row.querySelector('.total-cell').textContent = total===null?'—':money(total);
+      updateHeaderTotal();
+    }
+    function updateHeaderTotal(){
+      var t = sectionTotals(sec.id);
+      var sub = document.querySelector('#content .pagehead .sub');
+      if(sub) sub.textContent = (state.items[sec.id]||[]).length + ' line item(s) · estimated ' + money(t.total);
+      var totRow = tbody.querySelector('.total-row td.readonly');
+      if(totRow) totRow.textContent = money(t.total);
+      renderNav();
+    }
+    tbody.querySelectorAll('tr[data-idx]').forEach(function(row){
+      var idx = parseInt(row.dataset.idx,10);
+      row.querySelectorAll('input,select').forEach(function(inp){
+        inp.addEventListener('input', function(){
+          var f = this.dataset.f;
+          var isNum = ['lf','sf','ea'].indexOf(f)>=0;
+          state.items[sec.id][idx][f] = isNum ? (this.value===''?'':parseFloat(this.value)||0) : this.value;
+          saveItems(sec.id);
+          if(f==='species'){
+            var dl = document.getElementById('dl-mat-'+sec.id+'-'+idx);
+            if(dl){ dl.innerHTML = materialOptionsForSpecies(this.value).map(function(m){return '<option value="'+esc(m)+'">';}).join(''); }
+          }
+          refreshRow(idx);
+        });
+      });
+      var pill = row.querySelector('[data-status-toggle]');
+      if(pill){
+        pill.addEventListener('click', function(){
+          var order = ['pending','ordered','received'];
+          var cur = state.items[sec.id][idx].status || 'pending';
+          state.items[sec.id][idx].status = order[(order.indexOf(cur)+1)%order.length];
+          saveItems(sec.id); renderSection(sec.id);
+        });
+      }
+      var delBtn = row.querySelector('[data-del]');
+      if(delBtn){ delBtn.addEventListener('click', function(){ state.items[sec.id].splice(idx,1); saveItems(sec.id); renderSection(sec.id); }); }
+    });
+    document.getElementById('btn-add-row').addEventListener('click', function(){
+      var defGroup = DEFAULT_GROUP[sec.id] || '';
+      state.items[sec.id].push({id:uid(), group:defGroup, purpose:'', pageDetail:'', material:'', length:'', species:'', lf:'', sf:'', sp:'', ea:'', location:'FACTORY', status:'pending'});
+      saveItems(sec.id); renderSection(sec.id);
+      setTimeout(function(){
+        var rows = document.querySelectorAll('#sec-tbody tr[data-idx]');
+        var last = rows[rows.length-1];
+        if(last){ var f = last.querySelector('input[data-f="purpose"]'); if(f) f.focus(); }
+      },30);
+    });
+    document.getElementById('btn-export-sec').addEventListener('click', function(){ exportSectionCSV(sec); });
+    document.getElementById('sec-search').addEventListener('input', function(){
+      var q = norm(this.value);
+      tbody.querySelectorAll('tr[data-idx]').forEach(function(row){
+        var idx = parseInt(row.dataset.idx,10);
+        var it = state.items[sec.id][idx];
+        var hay = norm([it.group,it.purpose,it.pageDetail,it.material,it.length,it.species,it.location].join(' '));
+        row.style.display = (!q || hay.indexOf(q)>=0) ? '' : 'none';
+      });
+    });
+  }
+
+  // ================= CSV EXPORT =================
+  function toCSV(rows){
+    return rows.map(function(r){ return r.map(function(c){ var s=(c===undefined||c===null)?'':String(c); if(/[",\n]/.test(s)) s='"'+s.replace(/"/g,'""')+'"'; return s; }).join(','); }).join('\r\n');
+  }
+  function downloadCSV(filename, rows){
+    var csv = toCSV(rows);
+    var blob = new Blob(["\ufeff"+csv], {type:'text/csv;charset=utf-8;'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a'); a.href=url; a.download=filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  }
+  function exportSectionCSV(sec){
+    var rows = [['Group','Purpose','Page/Detail','Material','Length','Species','LF','SF','SP','EA','QTY','Location','ItemKey','Unit Price','Total','Status']];
+    (state.items[sec.id]||[]).forEach(function(it){
+      var qty=computeQty(it), total=lineTotal(it), db=findDbEntry(it), unit=db?unitPriceOf(db):null;
+      rows.push([it.group,it.purpose,it.pageDetail,it.material,it.length,it.species,it.lf,it.sf,it.sp,it.ea, qty===null?'':qty, it.location, displayKeyOf(it), unit===null?'':unit.toFixed(2), total===null?'':total.toFixed(2), it.status||'pending']);
+    });
+    downloadCSV((state.project.name||'project')+'-'+sec.id+'.csv', rows);
+  }
+  function exportAllCSV(){
+    var rows = [['Section','Group','Purpose','Page/Detail','Material','Length','Species','LF','SF','SP','EA','QTY','Location','ItemKey','Unit Price','Total','Status']];
+    SECTIONS.forEach(function(sec){
+      (state.items[sec.id]||[]).forEach(function(it){
+        var qty=computeQty(it), total=lineTotal(it), db=findDbEntry(it), unit=db?unitPriceOf(db):null;
+        rows.push([sec.label,it.group,it.purpose,it.pageDetail,it.material,it.length,it.species,it.lf,it.sf,it.sp,it.ea, qty===null?'':qty, it.location, displayKeyOf(it), unit===null?'':unit.toFixed(2), total===null?'':total.toFixed(2), it.status||'pending']);
+      });
+    });
+    downloadCSV((state.project.name||'project')+'-material-list-full.csv', rows);
+  }
+
+  // ================= ROUTER =================
+  function renderAll(){
+    renderBottomNav();
+    if(!state.currentProjectId){
+      document.getElementById('shell').style.display = 'none';
+      document.getElementById('homecontent').style.display = '';
+      document.getElementById('btn-back-home').style.display = 'none';
+      if(state.bottomView==='home'){ renderHome(); }
+      else if(state.bottomView==='list'){ renderProjectListScreen(); }
+      else if(state.bottomView==='config'){ renderConfigScreen(); }
+      else { renderMoreScreen(); }
+      return;
+    }
+    // inside a project
+    var backLink = document.getElementById('btn-back-home');
+    backLink.style.display = '';
+    if(state.homeLevel==='project-menu'){
+      backLink.textContent = '← All Jobs';
+      document.getElementById('shell').style.display = 'none';
+      document.getElementById('homecontent').style.display = '';
+      document.getElementById('proj-edit').innerHTML = '';
+      renderProjectMenu();
+      return;
+    }
+    // shell (a specific tab's content)
+    var p = state.projects.find(function(x){ return x.id===state.currentProjectId; });
+    backLink.textContent = '← ' + (p?p.name:'Menu');
+    document.getElementById('shell').style.display = '';
+    document.getElementById('homecontent').style.display = 'none';
+    renderNav(); renderProjEdit();
+    if(state.tab==='dashboard') renderDashboard();
+    else if(state.tab==='ordered') renderOrdered();
+    else if(state.tab==='received') renderReceived();
+    else if(state.tab==='audit') renderAudit();
+    else if(state.tab==='database') renderDatabase();
+    else if(state.tab==='suppliers') renderSuppliers();
+    else renderSection(state.tab);
+  }
+  function boot(){
+    document.getElementById('homecontent').innerHTML = '<div class="empty" style="padding:80px 0;">Loading…</div>';
+    loadProjects().then(function(){
+      state.loaded = true;
+      renderAll();
+    });
+  }
+  boot();
+})();
+</script>

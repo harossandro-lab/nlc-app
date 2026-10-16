@@ -1,0 +1,16 @@
+# Java / Eclipse build output and IDE metadata
+NextLevelConstruction/bin/
+NextLevelConstruction/.settings/
+*.class
+
+# Local SQLite data
+*.db
+*.db-journal
+
+# Claude Code personal settings
+.claude/settings.local.json
+CLAUDE.local.md
+
+# OS noise
+.DS_Store
+Thumbs.db
