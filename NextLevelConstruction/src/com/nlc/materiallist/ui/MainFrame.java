@@ -111,6 +111,7 @@ public class MainFrame extends JFrame {
 
     public void openProject(Project project) {
         currentProject = project;
+        com.nlc.materiallist.service.AuditService.ensureBaseline(project.id);
         currentLevel = "project-menu";
         backLink.setText("\u2190 All Jobs");
         ProjectMenuPanel menu = new ProjectMenuPanel(project, this::openTile);
@@ -126,6 +127,7 @@ public class MainFrame extends JFrame {
             case "dashboard": screen = new DashboardPanel(currentProject); break;
             case "ordered": screen = new OrderedPanel(currentProject); break;
             case "received": screen = new ReceivedPanel(currentProject); break;
+            case "audit": screen = new AuditPanel(currentProject); break;
             case "database": screen = new MaterialsDbPanel(currentProject); break;
             case "suppliers": screen = new SuppliersPanel(currentProject); break;
             default: screen = new SectionPanel(currentProject, tileId); break;

@@ -4,19 +4,13 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
-import javax.swing.JFileChooser;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -143,36 +137,18 @@ public class OrderedPanel extends JPanel {
         for (Map.Entry<String, Map<String, OrderedLine>> g : byGroup.entrySet()) {
             for (OrderedLine e : g.getValue().values()) {
                 Double total = e.total();
-                String[] cells = {g.getKey(), e.material, e.length, e.species, String.valueOf(e.qty),
+                Csv.appendRow(sb, g.getKey(), e.material, e.length, e.species, String.valueOf(e.qty),
                         e.supply == null ? "" : e.supply,
                         e.unit == null ? "" : CalcEngine.fixed2(e.unit),
-                        total == null ? "" : CalcEngine.fixed2(total)};
-                for (int i = 0; i < cells.length; i++) {
-                    if (i > 0) sb.append(',');
-                    sb.append(csvCell(cells[i]));
-                }
-                sb.append('\n');
+                        total == null ? "" : CalcEngine.fixed2(total));
             }
         }
         return sb.toString();
     }
 
-    private static String csvCell(String v) {
-        if (v == null) return "";
-        if (v.contains(",") || v.contains("\"") || v.contains("\n")) return "\"" + v.replace("\"", "\"\"") + "\"";
-        return v;
-    }
-
     private void exportCsv() {
-        JFileChooser chooser = new JFileChooser();
         String base = (projectName == null || projectName.isEmpty() ? "project" : projectName) + "-ordered.csv";
-        chooser.setSelectedFile(new File(base));
-        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) return;
-        try {
-            Files.write(chooser.getSelectedFile().toPath(), buildCsv(byGroup).getBytes(StandardCharsets.UTF_8));
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(this, "Não consegui salvar o arquivo: " + ex.getMessage(), "Export CSV", JOptionPane.ERROR_MESSAGE);
-        }
+        Csv.saveWithDialog(this, base, buildCsv(byGroup));
     }
 
     private final class Model extends AbstractTableModel {

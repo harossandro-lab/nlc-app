@@ -92,9 +92,9 @@ public class SmokeCheck {
         List<String> wantTiles = new ArrayList<>();
         wantTiles.add("dashboard");
         for (SeedData.Section sec : SeedData.SECTIONS) wantTiles.add(sec.id);
-        wantTiles.add("ordered"); wantTiles.add("received"); wantTiles.add("database"); wantTiles.add("suppliers");
-        check("menu tiles = dashboard + 13 sections + ordered + received + db + suppliers", tileIds, wantTiles);
-        check("menu tile count", tileIds.size(), 18);
+        wantTiles.add("ordered"); wantTiles.add("received"); wantTiles.add("audit"); wantTiles.add("database"); wantTiles.add("suppliers");
+        check("menu tiles = dashboard + 13 sections + ordered + received + audit + db + suppliers", tileIds, wantTiles);
+        check("menu tile count", tileIds.size(), 19);
         System.setProperty("java.awt.headless", "true");
         com.nlc.materiallist.model.Project proj = new com.nlc.materiallist.dao.ProjectDao().create("TST", "Smoke");
         new com.nlc.materiallist.ui.ProjectMenuPanel(proj, id -> {});
@@ -219,9 +219,35 @@ public class SmokeCheck {
         // the log keeps only the last 400 entries
         List<CalcEngine.AuditChange> many = new ArrayList<>();
         for (int i = 0; i < 450; i++) many.add(new CalcEngine.AuditChange("ADDED", "k" + i, null, 1));
-        adao.saveRun(aproj.id, "2026-10-16T00:00:00Z", many, new LinkedHashMap<>());
+        Map<String, Integer> realSnapshot = new LinkedHashMap<>();
+        realSnapshot.put("2x4|12'|df.no2", 3);   // what the project really has now, so opening the panel finds nothing new
+        adao.saveRun(aproj.id, "2026-10-16T00:00:00Z", many, realSnapshot);
         check("audit log: trimmed to the last 400 entries", adao.countLog(aproj.id), 400);
         check("audit log: newest kept (k0 on top)", adao.findLog(aproj.id).get(0).itemKey, "k0");
+        // Audit panel + CSV, and the hook from the take-off table (debounced 1.4 s)
+        com.nlc.materiallist.ui.AuditPanel ap = new com.nlc.materiallist.ui.AuditPanel(aproj);
+        javax.swing.JTable at = findTable(ap);
+        check("AuditPanel lists the newest entry first", at.getModel().getValueAt(0, 2), "k0");
+        check("AuditPanel ADDED shows a dash as old qty", at.getModel().getValueAt(0, 3), "—");
+        check("audit CSV: header + ADDED row (empty old qty)",
+            com.nlc.materiallist.ui.AuditPanel.buildCsv(adao.findLog(aproj.id)).split("\n")[1],
+            "2026-10-16T00:00:00Z,ADDED,k0,,1");
+        com.nlc.materiallist.model.Project hproj = new com.nlc.materiallist.dao.ProjectDao().create("HOK", "Hook smoke");
+        com.nlc.materiallist.service.AuditService.ensureBaseline(hproj.id);
+        com.nlc.materiallist.ui.TakeoffTableModel tm = new com.nlc.materiallist.ui.TakeoffTableModel(hproj.id, "roof",
+            new ArrayList<>(), new com.nlc.materiallist.dao.TakeoffItemDao(), new com.nlc.materiallist.dao.MaterialDbDao(), new com.nlc.materiallist.dao.SupplierDao());
+        tm.addRow("ROOF");
+        for (int col = 0; col < tm.getColumnCount(); col++) {
+            String name = tm.getColumnName(col);
+            if (name.equals("Material")) tm.setValueAt("2X4", 0, col);
+            if (name.equals("Length")) tm.setValueAt("12'", 0, col);
+            if (name.equals("Species")) tm.setValueAt("DF.No2", 0, col);
+            if (name.equals("LF")) tm.setValueAt("24", 0, col);
+        }
+        Thread.sleep(com.nlc.materiallist.service.AuditService.DELAY_MS + 1200);
+        javax.swing.SwingUtilities.invokeAndWait(() -> {});
+        List<com.nlc.materiallist.dao.AuditDao.Entry> hlog = new com.nlc.materiallist.dao.AuditDao().findLog(hproj.id);
+        check("audit hook: edits in the take-off table are logged after the debounce", hlog.size() == 1 ? hlog.get(0).action + ":" + hlog.get(0).itemKey + ":" + hlog.get(0).newQty : "entries=" + hlog.size(), "ADDED:2x4|12'|df.no2:2");
         Path dbFile = Paths.get(System.getProperty("user.home"), "NextLevelConstruction", "material_list.db");
         check("db file created under user.home", Files.exists(dbFile), true);
         System.out.println("RESULT pass=" + pass + " fail=" + fail);

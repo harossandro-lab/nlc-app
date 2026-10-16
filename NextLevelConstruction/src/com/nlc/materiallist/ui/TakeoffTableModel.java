@@ -8,6 +8,7 @@ import com.nlc.materiallist.calc.CalcEngine;
 import com.nlc.materiallist.dao.MaterialDbDao;
 import com.nlc.materiallist.dao.SupplierDao;
 import com.nlc.materiallist.dao.TakeoffItemDao;
+import com.nlc.materiallist.service.AuditService;
 import com.nlc.materiallist.model.MaterialDbEntry;
 import com.nlc.materiallist.model.Supplier;
 import com.nlc.materiallist.model.TakeoffItem;
@@ -68,12 +69,14 @@ public class TakeoffTableModel extends AbstractTableModel {
         itemDao.insert(it);
         items.add(it);
         fireTableRowsInserted(items.size() - 1, items.size() - 1);
+        AuditService.schedule(projectId);
     }
 
     public void removeRow(int row) {
         TakeoffItem it = items.remove(row);
         itemDao.delete(it.id);
         fireTableRowsDeleted(row, row);
+        AuditService.schedule(projectId);
     }
 
     public void cycleStatus(int row) {
@@ -158,6 +161,7 @@ public class TakeoffTableModel extends AbstractTableModel {
         }
         itemDao.update(it);
         fireTableRowsUpdated(row, row); // also refreshes the computed QTY/Unit/Total cells on this row
+        AuditService.schedule(projectId);
     }
 
     private static Double parseNum(String s) {
