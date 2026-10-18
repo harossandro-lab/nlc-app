@@ -8,8 +8,10 @@ create table if not exists profiles (
     name    text default ''
 );
 
+create sequence if not exists sync_rows_seq_gen;
+
 create table if not exists sync_rows (
-    seq        bigint generated always as identity,
+    seq        bigint  not null default nextval('sync_rows_seq_gen'),
     table_name text    not null check (table_name in
                ('projects','project_info','suppliers','materials_db','takeoff_items','received_log','audit_log')),
     uid        text    not null,
@@ -20,13 +22,13 @@ create table if not exists sync_rows (
     updated_by uuid default auth.uid(),
     primary key (table_name, uid)
 );
-create unique index if not exists sync_rows_seq on sync_rows(seq);
+create unique index if not exists sync_rows_seq_idx on sync_rows(seq);
 create index if not exists sync_rows_project on sync_rows(project_id);
 
 -- Every write gets a fresh seq (last writer wins) and the server timestamp.
 create or replace function sync_rows_touch() returns trigger language plpgsql as $$
 begin
-    new.seq := nextval(pg_get_serial_sequence('sync_rows', 'seq'));
+    new.seq := nextval('sync_rows_seq_gen');
     new.updated_at := now();
     new.updated_by := auth.uid();
     return new;
