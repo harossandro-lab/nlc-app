@@ -10,7 +10,7 @@ from .ui.main_window import MainWindow
 def main() -> int:
     app = QApplication(sys.argv)
     app.setStyleSheet(theme.STYLE_SHEET)
-    window = MainWindow()
+    window = MainWindow(sync=True)
     window.show()
     return app.exec()
 

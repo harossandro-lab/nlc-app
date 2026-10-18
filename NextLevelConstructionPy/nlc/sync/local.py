@@ -36,9 +36,18 @@ def _enqueue(table: str, op: str, row: str, uid_expr: str = None) -> str:
             f"VALUES ('{table}', {uid_expr or uid.format(r=row)}, {proj.format(r=row)}, '{op}');")
 
 
+VERSION = "1"    # bump when the triggers change, so every device rebuilds them once
+
+
 def install(conn: sqlite3.Connection) -> None:
-    """Idempotent: adds uid columns, fills them for existing rows, and (re)creates the triggers."""
+    """Adds uid columns, fills them for existing rows, and (re)creates the triggers. Does nothing when this version
+    is already installed, and otherwise works in ONE transaction, so an edit made meanwhile can never miss the outbox."""
     conn.executescript(_META)
+    conn.execute("INSERT OR IGNORE INTO sync_meta(key, value) VALUES ('triggers', '')")
+    conn.commit()
+    if _get(conn, "triggers") == VERSION:
+        return
+    conn.execute("BEGIN IMMEDIATE")
     for table, (has_uid, _, _) in TABLES.items():
         if has_uid:
             cols = [r[1] for r in conn.execute(f"PRAGMA table_info({table})")]
@@ -61,7 +70,20 @@ def install(conn: sqlite3.Connection) -> None:
             {_enqueue(table, 'upsert', 'NEW')} END""")
         conn.execute(f"""CREATE TRIGGER sync_{table}_ad AFTER DELETE ON {table} WHEN {_QUIET} BEGIN
             {_enqueue(table, 'delete', 'OLD')} END""")
+    conn.execute("UPDATE sync_meta SET value=? WHERE key='triggers'", (VERSION,))
     conn.commit()
+
+
+def _get(conn, key):
+    return conn.execute("SELECT value FROM sync_meta WHERE key=?", (key,)).fetchone()[0]
+
+
+def pending_count(conn: sqlite3.Connection) -> int:
+    """Edits waiting to be sent (0 when sync was never installed)."""
+    try:
+        return conn.execute("SELECT COUNT(*) FROM sync_outbox").fetchone()[0]
+    except sqlite3.OperationalError:
+        return 0
 
 
 def enqueue_all(conn: sqlite3.Connection) -> None:

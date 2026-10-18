@@ -151,6 +151,10 @@ java "-Duser.home=$env:TEMP\nlc-home" -cp "$env:TEMP\nlc-smoke;bin;resources;lib
    (PyInstaller) and team sync (item 1). Pitfalls hit: `QSortFilterProxyModel` with a Python `filterAcceptsRow` crashed Qt 6.12 (use `setRowHidden`);
    the offscreen Qt platform draws no text on Windows; the Bash tool eats backslashes in heredocs (use the Edit tool for `
 ` literals).
+   **Team sync (started 2026-10-18, decided: Supabase + works offline):** `supabase/schema.sql` (generic `sync_rows` store, roles admin/office/field via RLS, tombstones),
+   `nlc/sync/` = `local.py` (uid columns + outbox triggers, installed only when sync is configured), `engine.py` (push, then pull; last writer wins by server `seq`),
+   `supabase.py` (stdlib REST client + e-mail login), `service.py` (settings in `~/NextLevelConstruction/sync.json`, `run_sync`), `nlc/ui/sync_ui.py` (status label in the top bar, 30 s background timer, sign-in dialog).
+   Tested only against fakes: still needs the real Supabase project (URL + anon key, never `service_role`), the SQL run there, and users in `profiles`. Remote: GitHub `harossandro-lab/nlc-app` (private), branch `main`; `reference/*.xlsm` is git-ignored and was purged from history.
    Latent edge in the Java app (not fixed): opening a job re-takes the audit baseline, so a take-off edit made less than 1.4 s before re-opening it can lose its ADDED entry.
 9. **Invalid LENGTH text differs across the three implementations** (found by the parity test): Java `Double.parseDouble` accepts `12d`, `5f`, `NaN`,
    `Infinity`; web `parseFloat` reads a prefix (`5f`→5, `Infinity`→Infinity, `1_0`→1); Excel `VALUE()` and the Python port reject them. Needs a decision

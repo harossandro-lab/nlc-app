@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (QFrame, QHBoxLayout, QLabel, QMainWindow, QMessag
                                QVBoxLayout, QWidget)
 
 from .. import audit, db
+from ..sync import local as sync_local
 from ..models import Project
 from ..tiles import SECTION_IDS, TILES
 from .audit_log import AuditPanel
@@ -20,6 +21,7 @@ from .project_list import ProjectListPanel
 from .project_menu import ProjectMenuPanel
 from .received import ReceivedPanel
 from .suppliers import SuppliersPanel
+from .sync_ui import SyncController, SyncDialog
 from .takeoff import TakeoffPanel
 
 
@@ -52,7 +54,7 @@ class ClickableLabel(QLabel):
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, conn: Optional[sqlite3.Connection] = None):
+    def __init__(self, conn: Optional[sqlite3.Connection] = None, sync: bool = False):
         super().__init__()
         self.conn = conn if conn is not None else db.connect()
         self.setWindowTitle("Next Level Construction — Material List")
@@ -72,6 +74,42 @@ class MainWindow(QMainWindow):
         root.addWidget(self._bottom_nav())
         self.setCentralWidget(central)
         self.show_home()
+        self.sync: Optional[SyncController] = None
+        if sync:
+            self._start_sync()
+
+    # ---------------- team sync ----------------
+    def _start_sync(self) -> None:
+        path = self.conn.execute("PRAGMA database_list").fetchone()[2]
+        if not path:
+            return                                   # in-memory database: nothing to share
+        self.sync = SyncController(path, self)
+        self.sync.status_changed.connect(self._show_sync_status)
+        self.sync.data_changed.connect(self._refresh_after_pull)
+        if self.sync.remote is not None:
+            sync_local.install(self.conn)            # start tracking edits before the first one is made
+        self.sync.start()
+
+    def _show_sync_status(self, text: str, tone: str) -> None:
+        color = {"ok": "#9BE0B1", "warn": "#FFC66B", "off": "rgba(255,255,255,150)"}[tone]
+        self.sync_label.setText("● " + text)
+        self.sync_label.setStyleSheet(f"color: {color}; font-size: 12px; font-weight: bold;")
+
+    def _sync_clicked(self) -> None:
+        if self.sync is None:
+            return
+        if self.sync.remote is None or not self.sync.remote.logged_in:
+            if SyncDialog(self).exec() != SyncDialog.Accepted:
+                return
+            sync_local.install(self.conn)
+            self.sync.reload_remote()
+        self.sync.sync_now()
+
+    def _refresh_after_pull(self) -> None:
+        """Other people's edits arrived. Home-level screens are rebuilt; a screen being edited is left alone
+        (it shows the new data the next time it is opened)."""
+        if self.current_level == "home":
+            self._home_view()
 
     # ---------------- chrome ----------------
     def _top_bar(self) -> QFrame:
@@ -86,6 +124,9 @@ class MainWindow(QMainWindow):
         lay.addWidget(brand)
         lay.addWidget(self.back_link)
         lay.addStretch(1)
+        self.sync_label = ClickableLabel("", self._sync_clicked)
+        self.sync_label.setObjectName("synclabel")
+        lay.addWidget(self.sync_label)
         return bar
 
     def _bottom_nav(self) -> QFrame:
@@ -120,6 +161,7 @@ class MainWindow(QMainWindow):
         self.current_level = "home"
         self.current_project = None
         self.back_link.setText("")
+        self._home_view = self.show_home
         panel = HomePanel(self.conn)
         panel.open_project.connect(self.open_project)
         self._show(panel)
@@ -129,6 +171,7 @@ class MainWindow(QMainWindow):
         self.current_level = "home"
         self.current_project = None
         self.back_link.setText("")
+        self._home_view = self.show_list
         panel = ProjectListPanel(self.conn)
         panel.open_project.connect(self.open_project)
         self._show(panel)
@@ -138,6 +181,7 @@ class MainWindow(QMainWindow):
         self.current_level = "home"
         self.current_project = None
         self.back_link.setText("")
+        self._home_view = self.show_config
         panel = ConfigPanel(self.conn)
         panel.open_project.connect(self.open_project)
         self._show(panel)
@@ -190,6 +234,8 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event) -> None:
         self._flush_current()
+        if self.sync is not None:
+            self.sync.stop()
         super().closeEvent(event)
 
     def show_about(self) -> None:
